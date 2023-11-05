@@ -1,0 +1,18 @@
+{% extends "layout.html" %}
+{% block title %}
+Home Page - Microblog
+{% endblock %}
+{% block content %}
+
+{% for employee_info in list_of_employees %}
+<tr {% if employee_info[4]=="Dopuszczony" -%}class="table-success" {%-else -%}class="table-danger" {%- endif %}>
+    <th scope="row">{{ employee_info[0] }}</th>
+    <td>{{ employee_info[1] }}</td>
+    <td>{{ employee_info[2] }}</td>
+    <td>{{ employee_info[3] }}</td>
+    <td>{{
+        employee_info[4] }}
+    </td>
+</tr>
+{% endfor %}
+{% endblock %}
