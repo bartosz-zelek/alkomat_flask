@@ -5,14 +5,12 @@ Home Page - Microblog
 {% block content %}
 
 {% for employee_info in list_of_employees %}
-<tr {% if employee_info[4]=="Dopuszczony" -%}class="table-success" {%-else -%}class="table-danger" {%- endif %}>
-    <th scope="row">{{ employee_info[0] }}</th>
-    <td>{{ employee_info[1] }}</td>
-    <td>{{ employee_info[2] }}</td>
-    <td>{{ employee_info[3] }}</td>
-    <td>{{
-        employee_info[4] }}
-    </td>
+<tr {% if employee_info[3]<=0.2 -%}class="table-success" {%-else -%}class="table-danger" {%- endif %}>
+    <th scope="row">{{ loop.index }}</th>
+    <td>{{ employee_info[0] }}</td>
+    <td>{{ employee_info[1] }} {{ employee_info[2] }}</td>
+    <td>{{ employee_info[3] }}‰</td>
+    <td>{% if employee_info[3]<=0.2 -%} Dopuszczony {% else %} Niedopuszczony {% endif %} </td>
 </tr>
 {% endfor %}
 {% endblock %}
