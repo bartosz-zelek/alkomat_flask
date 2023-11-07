@@ -4,16 +4,6 @@ Home Page - Microblog
 {% endblock %}
 {% block content %}
 
-<!-- {% for employee_info in list_of_employees %}
-<tr {% if employee_info[3]<=0.2 -%}class="table-success" {%-else -%}class="table-danger" {%- endif %}>
-    <th scope="row">{{ loop.index }}</th>
-    <td>{{ employee_info[0] }}</td>
-    <td>{{ employee_info[1] }} {{ employee_info[2] }}</td>
-    <td>{{ employee_info[3] }}‰</td>
-    <td>{% if employee_info[3]<=0.2 -%} Dopuszczony {% else %} Niedopuszczony {% endif %} </td>
-</tr>
-{% endfor %} -->
-
 <script>
     // every 1 second asynchronusly fetch data from server and update table
     setInterval(function () {

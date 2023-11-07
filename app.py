@@ -9,7 +9,6 @@ app = Flask(__name__)
 
 @app.route('/')
 def index():
-    # list_of_employees = [["1", "23:52 5.11.2023 r.", "Bartosz Żelek", "0.2‰", "Dopuszczony"], ["2", "23:52 5.11.2023 r.", "Żartosz Belek", "2.0‰", "Niedopuszczony"]]
     try:
         db = get_db()
         cur = db.execute("SELECT date_time, name, surname, value FROM users INNER JOIN readings ON users.rfid = readings.fk_rfid ORDER BY readings.date_time DESC")
