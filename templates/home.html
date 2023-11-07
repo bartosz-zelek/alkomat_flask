@@ -4,7 +4,7 @@ Home Page - Microblog
 {% endblock %}
 {% block content %}
 
-{% for employee_info in list_of_employees %}
+<!-- {% for employee_info in list_of_employees %}
 <tr {% if employee_info[3]<=0.2 -%}class="table-success" {%-else -%}class="table-danger" {%- endif %}>
     <th scope="row">{{ loop.index }}</th>
     <td>{{ employee_info[0] }}</td>
@@ -12,5 +12,33 @@ Home Page - Microblog
     <td>{{ employee_info[3] }}‰</td>
     <td>{% if employee_info[3]<=0.2 -%} Dopuszczony {% else %} Niedopuszczony {% endif %} </td>
 </tr>
-{% endfor %}
+{% endfor %} -->
+
+<script>
+    // every 1 second asynchronusly fetch data from server and update table
+    setInterval(function () {
+        fetch('/get_readings/all')
+            .then(response => response.json())
+            .then(data => {
+                let table = document.querySelector('tbody');
+                table.innerHTML = '';
+                data.forEach((employee, index) => {
+                    let row = document.createElement('tr');
+                    row.innerHTML = `
+                    <th scope="row">${index + 1}</th>
+                    <td>${employee[0]}</td>
+                    <td>${employee[1]} ${employee[2]}</td>
+                    <td>${employee[3]}‰</td>
+                    <td>${employee[3] <= 0.2 ? "Dopuszczony" : "Niedopuszczony"}</td>
+                    `;
+                    if (employee[3] <= 0.2) {
+                        row.classList.add('table-success');
+                    } else {
+                        row.classList.add('table-danger');
+                    }
+                    table.appendChild(row);
+                });
+            });
+    }, 1000);
+</script>
 {% endblock %}

@@ -1,7 +1,7 @@
 import sqlite3
 import sys, traceback
 from datetime import datetime
-from flask import Flask, render_template, g
+from flask import Flask, render_template, g, jsonify
 
 DATABASE = 'static/database.db'
 
@@ -21,7 +21,7 @@ def index():
         exc_type, exc_value, exc_tb = sys.exc_info()
         return traceback.format_exception(exc_type, exc_value, exc_tb)[-1], 500
 
-@app.route('/add_employee/<id>/<name>/<surname>')
+@app.route('/add_employee/<int:id>/<name>/<surname>')
 def add_employee(id, name, surname):
     try:
         db = get_db()
@@ -32,13 +32,25 @@ def add_employee(id, name, surname):
         exc_type, exc_value, exc_tb = sys.exc_info()
         return traceback.format_exception(exc_type, exc_value, exc_tb)[-1], 500
 
-@app.route('/add_reading/<rfid>/<value>')
+@app.route('/add_reading/<rfid>/<float:value>')
 def add_reading(rfid, value):
     try:
         db = get_db()
         db.execute("INSERT INTO readings (fk_rfid, date_time, value) VALUES (?, ?, ?)", (rfid, datetime.now(), value))
         db.commit()
         return "Added", 200
+    except sqlite3.Error as er:
+        exc_type, exc_value, exc_tb = sys.exc_info()
+        return traceback.format_exception(exc_type, exc_value, exc_tb)[-1], 500
+    
+@app.route('/get_readings/<rfid>')
+def get_readings(rfid):
+    try:
+        if rfid == "all":
+            db = get_db()
+            cur = db.execute("SELECT date_time, name, surname, value FROM users INNER JOIN readings ON users.rfid = readings.fk_rfid ORDER BY readings.date_time DESC")
+            list_of_readings = cur.fetchall()
+            return jsonify(list_of_readings), 200
     except sqlite3.Error as er:
         exc_type, exc_value, exc_tb = sys.exc_info()
         return traceback.format_exception(exc_type, exc_value, exc_tb)[-1], 500
