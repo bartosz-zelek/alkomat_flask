@@ -1,13 +1,23 @@
-#include "MFRC522.h"
+#include <Servo.h>
+#include <MFRC522.h>
+#include <LiquidCrystal_I2C.h>
+#include <OneWire.h>
+
 #define RST_PIN 9
 #define SS_PIN 10
+#define LCD_ADDR 0x27
+#define SENSOR_PIN A0
+#define BTN_PIN 2
+#define SERVO_PIN 3
 
 MFRC522 mfrc522(SS_PIN, RST_PIN);
+LiquidCrystal_I2C lcd(LCD_ADDR, 16,2);
+Servo servo;
 
 char com = 0;
 int ref_val = 0;
 int meas_val = 0;
-int scaled_val = 0;
+float scaled_val = 0;
 
 // simple measurement
 int measure() {
@@ -15,36 +25,48 @@ int measure() {
   int max = 0;
   int min = 1023;
   int meas = 0;
-  for (int i = 0; i < 18; i++) {
-    meas = analogRead(A5);
+  for (int i = 0; i < 34; i++) {
+    meas = analogRead(SENSOR_PIN);
     if (meas < min) min = meas;
     if (meas > max) max = meas;
     sum += meas;
     delay(100);
   }
   sum = sum - min - max;
-  sum = sum >> 4;
+  sum = sum >> 5;
   return sum;
 }
 
-// scale = 1 for per cent, 10 for per mille etc.
-// normalization assumed as: norm: [-refval;0] -> [0;scale]
-// normal scale: c. 80 -> 0 per mille and 0 -> 10 per mille
-// realistically the measurement shouldn't be lower than c. 40
-int scaled_measure(int xval, int refval, int scale = 10) {
-  float xprim = (float) 1 - xval/refval;
-  return (int) scale * xprim;
+void open_door() {
+  // goes from 170deg to 0deg in steps of 1deg
+  for (int pos = 180; pos > 0; pos -= 1) { 
+    servo.write(pos);
+    delay(15); // wait to reach a pos
+  }
+}
+
+void close_door() {
+  // goes from 0deg to 180deg in steps of 1deg
+  for (int pos = 0; pos < 180; pos += 1) { 
+    servo.write(pos);
+    delay(15); // wait to reach a pos
+  }
 }
 
 void setup() {
-  pinMode(A5, INPUT);
-  pinMode(2, INPUT_PULLUP);
-  pinMode(7, OUTPUT);
-  pinMode(8, OUTPUT);
+  pinMode(SENSOR_PIN, INPUT);
+  pinMode(BTN_PIN, INPUT_PULLUP);
+  // pinMode(7, OUTPUT);
+  // pinMode(8, OUTPUT);
   Serial.begin(9600);
   delay(1000);  
   SPI.begin();
   mfrc522.PCD_Init();
+  servo.attach(SERVO_PIN);
+  lcd.init();
+  lcd.backlight();
+  lcd.setCursor(0,0);
+  lcd.print("Zeskanuj karte  ");
 }
 
 void loop() {
@@ -59,31 +81,60 @@ void loop() {
       }
       Serial.print("\n");
       mfrc522.PICC_HaltA();
+      // digitalWrite(7, HIGH);
+      lcd.setCursor(0,0);
+      lcd.print("Wcisnij przycisk");
+      lcd.setCursor(0,1);
+      lcd.print("po czym dmuchaj ");
       // wait for button press
-      while (digitalRead(2)) {}
+      while (digitalRead(BTN_PIN)) {}
       meas_val = measure();
-      scaled_val = scaled_measure(meas_val, ref_val, 10);
-      Serial.println(scaled_val);
-      delay(1000);
+      // digitalWrite(7, LOW);
+      // scaled_val = scaled_measure(meas_val, ref_val);
+      Serial.println(ref_val);
+      Serial.println(meas_val);
+      lcd.clear();
+      // lcd.setCursor(0,0);
+      lcd.print("Czekaj          ");
       // wait for serial
       while (Serial.available() <= 0) {}
       com = Serial.read();
+      lcd.clear();
 
       // servo
-      if (com == 'g') {
-        digitalWrite(7, HIGH);
-        delay(1000);
-        digitalWrite(7, LOW);
-      }
-      if (com == 'r') {
-        digitalWrite(8, HIGH);
-        delay(1000);
-        digitalWrite(8, LOW);
+      switch (com) {
+        case 'g':
+          lcd.print("Zapraszamy!   ");
+          open_door();
+          delay(10000);
+          close_door();
+          lcd.clear();
+          break;
+        case 'r':
+          lcd.print("Jestes pijany:");
+          lcd.setCursor(0,1);
+          lcd.print("zablokowano.");
+          break;
+        case 'b':
+          lcd.print("Jestes juz    ");
+          lcd.setCursor(0,1);
+          lcd.print("zablokowany.");
+          break;
+        case 'n':
+          lcd.print("RFID          ");
+          lcd.setCursor(0,1);
+          lcd.print("nierozpoznane.");
+          break;
+        default:
+          lcd.print("Error.........");
       }
       // clear output
       while (Serial.available() > 0) {
         com = Serial.read();
         }
+      delay(1000);
+      lcd.clear();
+      lcd.print("Zeskanuj karte  ");
     }
   }
 }
