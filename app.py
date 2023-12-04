@@ -116,14 +116,19 @@ def index():
         return traceback.format_exception(exc_type, exc_value, exc_tb)[-1], 500
 
 # Define a route to add an employee to the database
-@app.route("/add_employee/<int:id>/<name>/<surname>")
-def add_employee(id, name, surname):
+@app.route("/add_employee", methods=['POST'])
+@login_required
+def add_employee():
+    # id = request.args.get('id')
+    name = request.form.get('name')
+    surname = request.form.get('surname')
     try:
         # Try to insert the employee into the database
         db = get_db()
-        db.execute("INSERT INTO users VALUES (?, ?, ?)", (id, name, surname))
+        db.execute("INSERT INTO users (NAME, SURNAME) VALUES  (?, ?)", (name, surname))
         db.commit()
-        return "Added", 200
+        flash('Employee added successfully!', 'success')
+        return redirect('/registered_workers')
     except sqlite3.Error as er:
         # If an SQLite error occurs, return the error information as a response
         exc_type, exc_value, exc_tb = sys.exc_info()
@@ -145,6 +150,104 @@ def add_reading(rfid, value):
         # If an SQLite error occurs, return the error information as a response
         exc_type, exc_value, exc_tb = sys.exc_info()
         return traceback.format_exception(exc_type, exc_value, exc_tb)[-1], 500
+    
+
+@app.route("/get_workers/all")
+@login_required
+def get_all_workers():
+    try:
+        # Try to get all workers from the database
+        db = get_db()
+        cur = db.execute("SELECT * FROM users")
+        workers = [{"id": row[0], "name": row[1], "surname": row[2]} for row in cur.fetchall()]
+        return jsonify(workers), 200
+    except sqlite3.Error as er:
+        # If an SQLite error occurs, return the error information as a response
+        exc_type, exc_value, exc_tb = sys.exc_info()
+        return traceback.format_exception(exc_type, exc_value, exc_tb)[-1], 500
+    
+
+@app.route("/registered_workers")
+@login_required
+def get_registered_workers():
+    try:
+        # Try to get registered workers from the database
+        db = get_db()
+        cur = db.execute("SELECT * FROM users")
+        workers = [{"id": row[0], "name": row[1], "surname": row[2]} for row in cur.fetchall()]
+        return render_template("registered_workers.html", workers=workers)
+    except sqlite3.Error as er:
+        # If an SQLite error occurs, return the error information as a response
+        exc_type, exc_value, exc_tb = sys.exc_info()
+        return traceback.format_exception(exc_type, exc_value, exc_tb)[-1], 500
+
+def block_worker(worker_id):
+    try:
+        # Try to update the worker status in the database
+        db = get_db()
+        db.execute("UPDATE users SET blocked = 1 WHERE ID = ?", (worker_id,))
+        db.commit()
+        flash(f'Worker with ID {worker_id} blocked successfully!', 'danger')
+    except sqlite3.Error as er:
+        # If an SQLite error occurs, return the error information as a response
+        exc_type, exc_value, exc_tb = sys.exc_info()
+        return traceback.format_exception(exc_type, exc_value, exc_tb)[-1], 500
+
+    return redirect('/registered_workers')
+
+# Define a route to unblock a worker
+@app.route("/unblock_worker/<int:worker_id>", methods=['POST'])
+@login_required
+def unblock_worker(worker_id):
+    try:
+        # Try to update the worker status in the database
+        db = get_db()
+        db.execute("UPDATE users SET blocked = 0 WHERE ID = ?", (worker_id,))
+        db.commit()
+        flash(f'Worker with ID {worker_id} unblocked successfully!', 'success')
+    except sqlite3.Error as er:
+        # If an SQLite error occurs, return the error information as a response
+        exc_type, exc_value, exc_tb = sys.exc_info()
+        return traceback.format_exception(exc_type, exc_value, exc_tb)[-1], 500
+
+    return redirect('/registered_workers')
+
+# Define a route to render the registered_workers page
+@app.route("/registered_workers", methods=['GET'])
+@login_required
+def registered_workers():
+    return render_template("registered_workers.html")
+
+# Define a route to render the live_records page
+@app.route("/live_records", methods=['GET'])
+@login_required
+def live_records():
+    return render_template("live_records.html")
+
+# Define a route to drop and reload the database
+@app.route("/drop_and_reload_database", methods=['POST'])
+@login_required
+def drop_and_reload_database():
+    try:
+        # Try to drop and reload the database
+        with app.app_context():
+            db = get_db()
+            # Drop all tables
+            db.execute("DROP TABLE IF EXISTS users")
+            db.execute("DROP TABLE IF EXISTS readings")
+            db.execute("DROP TABLE IF EXISTS bosses")
+
+            # Recreate tables and reload the schema
+            init_db()
+
+        flash('Database dropped and reloaded successfully!', 'warning')
+    except sqlite3.Error as er:
+        # If an SQLite error occurs, return the error information as a response
+        exc_type, exc_value, exc_tb = sys.exc_info()
+        return traceback.format_exception(exc_type, exc_value, exc_tb)[-1], 500
+
+    return redirect('/register')
+
 
 # Define a route to get readings from the database
 @app.route("/get_readings/<rfid>")

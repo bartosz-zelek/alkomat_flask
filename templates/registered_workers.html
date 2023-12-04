@@ -1,0 +1,70 @@
+{% extends "layout.html" %}
+{% block title %}Registered Workers{% endblock %}
+{% block content %}
+<div class="row mt-5">
+    <div class="col-2">
+        <h2>Registered Workers</h2>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th scope="col">#</th>
+                    <th scope="col">Name</th>
+                    <th scope="col">Surname</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="workersTableBody"></tbody>
+        </table>
+    </div>
+    <div class="col-8">
+        <!-- Form for adding a new worker -->
+        <form action="/add_employee" method="post">
+            <h2>Add New Employee</h2>
+            <div class="mb-3">
+                <label for="newEmployeeName" class="form-label">Name</label>
+                <input type="text" class="form-control" id="newEmployeeName" name="name" required>
+            </div>
+            <div class="mb-3">
+                <label for="newEmployeeSurname" class="form-label">Surname</label>
+                <input type="text" class="form-control" id="newEmployeeSurname" name="surname" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Add Employee</button>
+        </form>
+        <!-- JavaScript code for updating workers table -->
+        <script>
+            // every 1 second asynchronously fetch data from the server and update the workers table
+            setInterval(function () {
+                fetch('/get_workers/all')
+                    .then(response => response.json())
+                    .then(data => {
+                        let table = document.getElementById('workersTableBody');
+                        table.innerHTML = '';
+                        data.forEach((worker, index) => {
+                            let row = document.createElement('tr');
+                            row.innerHTML = `
+                            <th scope="row">${index + 1}</th>
+                            <td>${worker[0]}</td>
+                            <td>${worker[1]}</td>
+                            <td>${worker[2] == "blocked" ? "Blocked" : "Active"}</td>
+                            <td>
+                                <a href="/${worker[2] == "blocked" ? "unblock" : "block"}_worker/${worker[0]}" class="btn ${worker[2] == "blocked" ? "btn-success" : "btn-danger"}">${worker[2] == "blocked" ? "Unblock" : "Block"}</a>
+                            </td>
+                            `;
+                            if (worker[2] == "blocked") {
+                                row.classList.add('table-danger');
+                            } else {
+                                row.classList.add('table-success');
+                            }
+                            table.appendChild(row);
+                        });
+                    });
+            }, 1000);
+        </script>
+    </div>
+    <div class="col-2">
+        <!-- Button to redirect to the home page -->
+        <a href="/" class="btn btn-primary mt-3">Back to Home</a>
+    </div>
+</div>
+{% endblock %}

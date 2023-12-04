@@ -1,0 +1,55 @@
+{% extends "layout.html" %}
+{% block title %}Live Records - Alkomat{% endblock %}
+{% block content %}
+<div class="row mt-5">
+    <div class="col-2">
+        <h2>Live Records</h2>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th scope="col">#</th>
+                    <th scope="col">Data i godzina</th>
+                    <th scope="col">Imię i nazwisko</th>
+                    <th scope="col">Odczyt z alkomierza</th>
+                    <th scope="col">Podjęta akcja</th>
+                </tr>
+            </thead>
+            <tbody id="liveRecordsTableBody"></tbody>
+        </table>
+    </div>
+    <div class="col-8">
+        <!-- JavaScript code for updating live records table -->
+        <script>
+            // every 1 second asynchronously fetch data from the server and update the live records table
+            setInterval(function () {
+                fetch('/get_readings/all')
+                    .then(response => response.json())
+                    .then(data => {
+                        let table = document.getElementById('liveRecordsTableBody');
+                        table.innerHTML = '';
+                        data.forEach((reading, index) => {
+                            let row = document.createElement('tr');
+                            row.innerHTML = `
+                            <th scope="row">${index + 1}</th>
+                            <td>${reading[0]}</td>
+                            <td>${reading[1]} ${reading[2]}</td>
+                            <td>${reading[3]}‰</td>
+                            <td>${reading[3] <= 0.2 ? "Dopuszczony" : "Niedopuszczony"}</td>
+                            `;
+                            if (reading[3] <= 0.2) {
+                                row.classList.add('table-success');
+                            } else {
+                                row.classList.add('table-danger');
+                            }
+                            table.appendChild(row);
+                        });
+                    });
+            }, 1000);
+        </script>
+    </div>
+    <div class="col-2">
+        <!-- Button to redirect to the home page -->
+        <a href="/" class="btn btn-primary mt-3">Back to Home</a>
+    </div>
+</div>
+{% endblock %}
