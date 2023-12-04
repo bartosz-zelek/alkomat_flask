@@ -6,7 +6,9 @@ from flask import Flask, render_template, g, jsonify, flash, request, abort, red
 from flask_login import login_user, login_required, logout_user, current_user, LoginManager
 from werkzeug.security import generate_password_hash, check_password_hash
 from boss import Boss
-import os
+from flask_wtf import FlaskForm
+from wtforms import StringField, PasswordField, SubmitField
+from wtforms.validators import DataRequired, EqualTo
 
 
 
@@ -19,8 +21,6 @@ app.secret_key = b"123456789"
 
 login_manager = LoginManager(app)
 
-# Define a route to register a boss
-@app.route("/register_boss/<username>/<password>")
 def register_boss(username, password):
     try:
         # Hash the password
@@ -36,6 +36,31 @@ def register_boss(username, password):
         exc_type, exc_value, exc_tb = sys.exc_info()
         return traceback.format_exception(exc_type, exc_value, exc_tb)[-1], 500
 
+class RegistrationForm(FlaskForm):
+    username = StringField('Username', validators=[DataRequired()])
+    password = PasswordField('Password', validators=[DataRequired()])
+    confirm_password = PasswordField('Confirm Password', validators=[DataRequired(), EqualTo('password')])
+    submit = SubmitField('Register Boss')
+
+@app.route("/register", methods=['GET','POST'])
+def register():
+    form = RegistrationForm()
+    if form.validate_on_submit():
+        username = form.username.data
+        password = form.password.data
+
+        # Check if the username is already taken
+        db = get_db()
+        cur = db.execute("SELECT ID FROM BOSSES WHERE USERNAME = ?", (username,))
+        if cur.fetchone():
+            flash('Username already taken. Choose another one.', 'danger')
+        else:
+            # Register the boss
+            register_boss(username, password)
+            flash('Boss registered successfully!', 'success')
+            return redirect('/login')
+
+    return render_template('register.html', form=form)
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -49,6 +74,9 @@ def load_user(user_id):
 # Updated login route
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    if current_user.is_authenticated:
+        return redirect('/')
+
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
