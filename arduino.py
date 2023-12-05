@@ -1,6 +1,6 @@
 import serial
 import codecs
-# import requests
+import requests
 
 class ArduinoComs:    
     def __init__(self, port) -> None:
@@ -11,16 +11,17 @@ class ArduinoComs:
     def read_and_respond(self):
         print('Reading lines')
         rfid = self.arduino.readline()
-        print('Line read - rfid is {}'.format(codecs.decode(rfid, 'ascii')))
+        rfid = codecs.decode(rfid, 'ascii')
+        print('Line read - rfid is {}'.format(rfid))
         ref_val = int(self.arduino.readline())
         meas_val = int(self.arduino.readline())
         print('Line read - ref_val is {}, meas_val is {}'.format(ref_val, meas_val))
         is_drunk = meas_val / ref_val > 0.2 and ref_val - meas_val > 5 and meas_val < 70
-        # TODO: should send requests with args ?rfid=$rfid and ?drunk=$is_drunk
-        # TODO: should wait for response from flask server w/ possible responses:
+        # TODO: maybe rewrite using ?rfid=rfid etc.
         # 'g' if all good, 'r' if drunk, 'b' if already blocked in DB, 'n' if RFID not recognized
         # mocked response
-        response_char = input()
+        response = requests.get('http://localhost:5000/add_reading/{}/{}'.format(rfid, is_drunk))
+        response_char = response.text
         self.arduino.write(bytes(response_char, 'ascii'))
         print('Info sent to Arduino')
         

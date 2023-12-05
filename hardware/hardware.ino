@@ -38,7 +38,7 @@ int measure() {
 }
 
 void open_door() {
-  // goes from 170deg to 0deg in steps of 1deg
+  // goes from 180deg to 0deg in steps of 1deg
   for (int pos = 180; pos > 0; pos -= 1) { 
     servo.write(pos);
     delay(15); // wait to reach a pos
