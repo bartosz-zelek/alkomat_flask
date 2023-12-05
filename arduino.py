@@ -1,5 +1,6 @@
-import serial
+import sys
 import codecs
+import serial
 import requests
 
 class ArduinoComs:    
@@ -17,9 +18,9 @@ class ArduinoComs:
         meas_val = int(self.arduino.readline())
         print('Line read - ref_val is {}, meas_val is {}'.format(ref_val, meas_val))
         is_drunk = meas_val / ref_val > 0.2 and ref_val - meas_val > 5 and meas_val < 70
-        # TODO: maybe rewrite using ?rfid=rfid etc.
+        # TODO: maybe rewrite using ?rfid=rfid etc. if possible
         # 'g' if all good, 'r' if drunk, 'b' if already blocked in DB, 'n' if RFID not recognized
-        # mocked response
+        # not tested, server not ready to respond just yet
         response = requests.get('http://localhost:5000/add_reading/{}/{}'.format(rfid, is_drunk))
         response_char = response.text
         self.arduino.write(bytes(response_char, 'ascii'))
@@ -28,7 +29,7 @@ class ArduinoComs:
         
 
 if __name__ == '__main__':
-    # change COM for RPi
-    ard = ArduinoComs('COM3')
+    # change arg in terminal
+    ard = ArduinoComs(sys.argv[1])
     while True:
         ard.read_and_respond()
