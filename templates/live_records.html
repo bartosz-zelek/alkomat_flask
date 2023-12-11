@@ -17,39 +17,12 @@
             <tbody id="liveRecordsTableBody"></tbody>
         </table>
     </div>
-    <div class="col-8">
-        <!-- JavaScript code for updating live records table -->
-        <script>
-            // every 1 second asynchronously fetch data from the server and update the live records table
-            setInterval(function () {
-                fetch('/get_readings/all')
-                    .then(response => response.json())
-                    .then(data => {
-                        let table = document.getElementById('liveRecordsTableBody');
-                        table.innerHTML = '';
-                        data.forEach((reading, index) => {
-                            let row = document.createElement('tr');
-                            row.innerHTML = `
-                            <th scope="row">${index + 1}</th>
-                            <td>${reading[0]}</td>
-                            <td>${reading[1]} ${reading[2]}</td>
-                            <td>${reading[3]}‰</td>
-                            <td>${reading[3] <= 0.2 ? "Dopuszczony" : "Niedopuszczony"}</td>
-                            `;
-                            if (reading[3] <= 0.2) {
-                                row.classList.add('table-success');
-                            } else {
-                                row.classList.add('table-danger');
-                            }
-                            table.appendChild(row);
-                        });
-                    });
-            }, 1000);
-        </script>
-    </div>
     <div class="col-2">
         <!-- Button to redirect to the home page -->
         <a href="/" class="btn btn-primary mt-3">Back to Home</a>
     </div>
 </div>
+
+<script src= "{{ url_for('static', filename='live_records.js') }}"> </script>
+
 {% endblock %}

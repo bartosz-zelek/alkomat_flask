@@ -13,7 +13,7 @@ from wtforms.validators import DataRequired, EqualTo
 
 
 # Define the path to the SQLite database file
-DATABASE = "static/database.db"
+DATABASE = "database.db"
 
 # Create a Flask application instance
 app = Flask(__name__)
@@ -133,6 +133,23 @@ def add_employee():
         # If an SQLite error occurs, return the error information as a response
         exc_type, exc_value, exc_tb = sys.exc_info()
         return traceback.format_exception(exc_type, exc_value, exc_tb)[-1], 500
+    
+# Delete employee
+@app.route("/delete_employee/<id>", methods=['GET'])
+@login_required
+def delete_employee(id):
+    try:
+        # Try to delete the employee from the database
+        db = get_db()
+        db.execute("DELETE FROM users WHERE rfid = ?", (id,))
+        db.commit()
+        flash(f'Employee with rfid {id} deleted successfully!', 'danger')
+    except sqlite3.Error as er:
+        # If an SQLite error occurs, return the error information as a response
+        exc_type, exc_value, exc_tb = sys.exc_info()
+        return traceback.format_exception(exc_type, exc_value, exc_tb)[-1], 500
+
+    return redirect('/registered_workers')
 
 # Define a route to add a reading to the database
 @app.route("/add_reading/<rfid>/<float:value>")
@@ -152,42 +169,29 @@ def add_reading(rfid, value):
         return traceback.format_exception(exc_type, exc_value, exc_tb)[-1], 500
     
 
-@app.route("/get_workers/all")
-@login_required
-def get_all_workers():
-    try:
-        # Try to get all workers from the database
-        db = get_db()
-        cur = db.execute("SELECT * FROM users")
-        workers = [{"id": row[0], "name": row[1], "surname": row[2]} for row in cur.fetchall()]
-        return jsonify(workers), 200
-    except sqlite3.Error as er:
-        # If an SQLite error occurs, return the error information as a response
-        exc_type, exc_value, exc_tb = sys.exc_info()
-        return traceback.format_exception(exc_type, exc_value, exc_tb)[-1], 500
-    
-
 @app.route("/registered_workers")
 @login_required
 def get_registered_workers():
     try:
         # Try to get registered workers from the database
         db = get_db()
-        cur = db.execute("SELECT * FROM users")
-        workers = [{"id": row[0], "name": row[1], "surname": row[2]} for row in cur.fetchall()]
+        cur = db.execute("SELECT * FROM USERS")
+        workers = [{"id": row[0], "name": row[1], "surname": row[2], "blocked": row[3]} for row in cur.fetchall()]
         return render_template("registered_workers.html", workers=workers)
     except sqlite3.Error as er:
         # If an SQLite error occurs, return the error information as a response
         exc_type, exc_value, exc_tb = sys.exc_info()
         return traceback.format_exception(exc_type, exc_value, exc_tb)[-1], 500
 
-def block_worker(worker_id):
+@app.route("/block_employee/<id>", methods=['GET'])
+@login_required
+def block_employee(id):
     try:
         # Try to update the worker status in the database
         db = get_db()
-        db.execute("UPDATE users SET blocked = 1 WHERE ID = ?", (worker_id,))
+        db.execute("UPDATE users SET blocked = 1 WHERE rfid = ?", (id,))
         db.commit()
-        flash(f'Worker with ID {worker_id} blocked successfully!', 'danger')
+        flash(f'Employee with rfid {id} blocked successfully!', 'danger')
     except sqlite3.Error as er:
         # If an SQLite error occurs, return the error information as a response
         exc_type, exc_value, exc_tb = sys.exc_info()
@@ -196,15 +200,15 @@ def block_worker(worker_id):
     return redirect('/registered_workers')
 
 # Define a route to unblock a worker
-@app.route("/unblock_worker/<int:worker_id>", methods=['POST'])
+@app.route("/unblock_employee/<id>", methods=['GET'])
 @login_required
-def unblock_worker(worker_id):
+def unblock_employee(id):
     try:
         # Try to update the worker status in the database
         db = get_db()
-        db.execute("UPDATE users SET blocked = 0 WHERE ID = ?", (worker_id,))
+        db.execute("UPDATE users SET blocked = 0 WHERE rfid = ?", (id,))
         db.commit()
-        flash(f'Worker with ID {worker_id} unblocked successfully!', 'success')
+        flash(f'Employee with rfid {id} unblocked successfully!', 'success')
     except sqlite3.Error as er:
         # If an SQLite error occurs, return the error information as a response
         exc_type, exc_value, exc_tb = sys.exc_info()
@@ -213,10 +217,10 @@ def unblock_worker(worker_id):
     return redirect('/registered_workers')
 
 # Define a route to render the registered_workers page
-@app.route("/registered_workers", methods=['GET'])
-@login_required
-def registered_workers():
-    return render_template("registered_workers.html")
+# @app.route("/registered_workers", methods=['GET'])
+# @login_required
+# def registered_workers():
+#     return render_template("registered_workers.html")
 
 # Define a route to render the live_records page
 @app.route("/live_records", methods=['GET'])
@@ -269,7 +273,7 @@ def get_readings(rfid):
 
 # Function to get a database connection
 def get_db():
-    db = getattr(g, "_database", None)
+    db = getattr(g,"static/database.db", None)
     if db is None:
         db = g._database = sqlite3.connect(DATABASE)
     return db
@@ -285,7 +289,7 @@ def close_connection(exception):
 def init_db():
     with app.app_context():
         db = get_db()
-        with open("static/schema.sql", mode="r") as f:
+        with open("schema.sql", mode="r") as f:
             db.cursor().executescript(f.read())
         db.commit()
         print("Initialization complete.")
