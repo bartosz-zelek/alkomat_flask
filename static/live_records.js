@@ -1,5 +1,5 @@
 setInterval(() => {
-    fetch('/get_readings/all')
+    fetch('/api/get_readings?count=20')
         .then(response => response.json())
         .then(data => {
             let table = document.getElementById('liveRecordsTableBody');
