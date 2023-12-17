@@ -33,6 +33,7 @@ def create_app():
                     if datetime.strptime(blockade[1], f"%Y-%m-%d %H:%M:%S") < datetime.now():
                         # Blockade has ended, update the BLOCKED status of the user to 0
                         db.execute("UPDATE USERS SET BLOCKED = 0 WHERE RFID = ?", (blockade[0],))
+                        db.execute("UPDATE BLOCKADES SET STATUS = 'DONE' WHERE RFID = ? AND STATUS = 'ONGOING' AND BLOCKADE_TYPE = 'AUTOMATIC'", (blockade[0],))
                         db.commit()
 
                 return jsonify({"message": "Blockades checked"}), 200

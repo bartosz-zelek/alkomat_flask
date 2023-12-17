@@ -56,6 +56,12 @@ def add_reading(rfid, value):
     try:
         # Try to insert the reading into the database
         db = get_db()
+        #Check if employee exists
+        cur = db.execute("SELECT * FROM USERS WHERE RFID = ?", (rfid,))
+        user = cur.fetchone()
+        if not user:
+            # User does not exist, return error message
+            return jsonify({"message": "User does not exist"}), 404
         # Check if an employee is blocked
         cur = db.execute("SELECT BLOCKED FROM USERS WHERE RFID = ?", (rfid))
         blocked_status = cur.fetchone()
