@@ -21,7 +21,7 @@ class ArduinoComs:
         # TODO: maybe rewrite using ?rfid=rfid etc. if possible
         # 'g' if all good, 'r' if drunk, 'b' if already blocked in DB, 'n' if RFID not recognized
         # not tested, server not ready to respond just yet
-        response = requests.get('http://localhost:5000/add_reading/{}/{}'.format(rfid, is_drunk))
+        response = requests.get('http://localhost:5000/api/add_reading/{}/{}'.format(rfid, is_drunk))
         response_char = response.text
         self.arduino.write(bytes(response_char, 'ascii'))
         print('Info sent to Arduino')

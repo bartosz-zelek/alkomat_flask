@@ -1,5 +1,5 @@
 import sqlite3
-from flask import g
+from flask import g, current_app
 
 DATABASE = "database.db"
 
@@ -7,7 +7,7 @@ DATABASE = "database.db"
 def get_db():
     db = getattr(g,"database.db", None)
     if db is None:
-        db = g._database = sqlite3.connect(DATABASE)
+        db = g._database = sqlite3.connect(DATABASE, timeout=60)
     return db
 
 # Function to initialize the database with some initial data

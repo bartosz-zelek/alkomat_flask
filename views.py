@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, flash, request, abort, redirect
+from flask import Blueprint, render_template, flash, request, abort, redirect, current_app
 from flask_login import login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from boss import Boss
@@ -11,6 +11,7 @@ import traceback
 from db import get_db, init_db
 from datetime import datetime
 from flask import jsonify
+from datetime import datetime, timedelta
 
 views = Blueprint('views', __name__)
 
@@ -138,23 +139,6 @@ def delete_employee(id):
         return traceback.format_exception(exc_type, exc_value, exc_tb)[-1], 500
 
     return redirect('/registered_workers')
-
-# Define a route to add a reading to the database
-@views.route("/add_reading/<rfid>/<float:value>")
-def add_reading(rfid, value):
-    try:
-        # Try to insert the reading into the database
-        db = get_db()
-        db.execute(
-            "INSERT INTO readings (fk_rfid, date_time, value) VALUES (?, ?, ?)",
-            (rfid, datetime.now(), value),
-        )
-        db.commit()
-        return "Added", 200
-    except sqlite3.Error as er:
-        # If an SQLite error occurs, return the error information as a response
-        exc_type, exc_value, exc_tb = sys.exc_info()
-        return traceback.format_exception(exc_type, exc_value, exc_tb)[-1], 500
     
 @views.route("/registered_workers")
 @login_required
@@ -177,6 +161,8 @@ def block_employee(id):
         # Try to update the worker status in the database
         db = get_db()
         db.execute("UPDATE users SET blocked = 1 WHERE rfid = ?", (id,))
+        # Add new block to BLOCKADES table that lasts for a very long time (100 years from curdate)
+        db.execute("INSERT INTO BLOCKADES (RFID, BLOCKADE_TYPE) VALUES (?, ?)", (id, "MANUAL"))
         db.commit()
         flash(f'Employee with rfid {id} blocked successfully!', 'danger')
     except sqlite3.Error as er:
@@ -215,15 +201,16 @@ def live_records():
 def drop_and_reload_database():
     try:
         # Try to drop and reload the database
-        with views.app_context():
+        with current_app.app_context():
             db = get_db()
             # Drop all tables
             db.execute("DROP TABLE IF EXISTS users")
             db.execute("DROP TABLE IF EXISTS readings")
             db.execute("DROP TABLE IF EXISTS bosses")
+            db.execute("DROP TABLE IF EXISTS blockades")
 
             # Recreate tables and reload the schema
-            init_db(views)
+            init_db(current_app)
 
         flash('Database dropped and reloaded successfully!', 'warning')
     except sqlite3.Error as er:
