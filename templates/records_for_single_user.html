@@ -1,0 +1,28 @@
+{% extends "layout.html" %}
+{% block title %}Live Records - Alkomat{% endblock %}
+{% block content %}
+<div class="row mt-5">
+    <div class="col-2">
+        <h2>Records for {{ name }} {{ surname }}</h2>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th scope="col">#</th>
+                    <th scope="col">Data i godzina</th>
+                    <th scope="col">Imię i nazwisko</th>
+                    <th scope="col">Odczyt z alkomierza</th>
+                    <th scope="col">Podjęta akcja</th>
+                </tr>
+            </thead>
+            <tbody id="UserRecordsTableBody"></tbody>
+        </table>
+    </div>
+    <div class="col-2">
+        <!-- Button to redirect to the home page -->
+        <a href="/" class="btn btn-primary mt-3">Back to Home</a>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='records_for_single_user.js') }}"></script>
+
+{% endblock %}

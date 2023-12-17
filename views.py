@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, flash, request, redirect, current_app
+from flask import Blueprint, render_template, flash, request, redirect, current_app, url_for, jsonify
 from flask_login import login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from boss import Boss
@@ -9,6 +9,10 @@ import sqlite3
 import sys
 import traceback
 from db import get_db, init_db
+from api import get_readings
+import requests
+import json
+
 
 views = Blueprint('views', __name__)
 
@@ -37,7 +41,7 @@ def register_boss(username, password):
 
 
 @views.route("/")
-#@login_required  # Add this decorator to protect the route
+# @login_required  # Add this decorator to protect the route
 def index():
     try:
         if not current_user.is_authenticated:
@@ -68,7 +72,11 @@ def login():
             user = Boss(id=boss_data[0], name=username)
             login_user(user)
             flash('Login successful!', 'success')
-            return redirect('/')
+            try:
+                return redirect('/')
+            except Exception as e:
+                return jsonify({"message": str(e)}), 500
+
 
         flash('Invalid username or password', 'danger')
 
@@ -219,3 +227,22 @@ def drop_and_reload_database():
         return traceback.format_exception(exc_type, exc_value, exc_tb)[-1], 500
 
     return redirect('/register')
+
+@views.route("/readings_table/<int:id>")
+#@login_required
+def readings_table(id):
+    # Make a request to the get_readings API
+    response = requests.get(url_for('api.get_readings', _external=True, id=id))
+
+    # Check if the request was successful
+    if response.status_code == 200:
+        # Parse the JSON response
+        readings = json.loads(response.text)
+
+        # Get name and surname of the user from json
+        user_name = readings[0][1]
+        user_surname = readings[0][2]
+
+        return render_template("records_for_single_user.html", user_id=id, readings=readings, name=user_name, surname=user_surname)
+    else:
+        return response.text, response.status_code

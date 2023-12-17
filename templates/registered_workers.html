@@ -20,6 +20,7 @@
                             <a href="/unblock_employee/{{worker.id}}" class="btn btn-success">Unblock</a>
                         {% endif %}
                     </td>
+                    <td><a href="{{ url_for('views.readings_table', id=worker.id) }}">Live Records</a></td>
                 </tr>
             {% endfor%}
             </thead>

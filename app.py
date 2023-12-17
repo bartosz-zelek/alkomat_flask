@@ -33,6 +33,7 @@ def create_app():
                     if datetime.strptime(blockade[1], f"%Y-%m-%d %H:%M:%S") < datetime.now():
                         # Blockade has ended, update the BLOCKED status of the user to 0
                         db.execute("UPDATE USERS SET BLOCKED = 0 WHERE RFID = ?", (blockade[0],))
+                        db.execute("UPDATE BLOCKADES SET STATUS = 'DONE' WHERE RFID = ? AND STATUS = 'ONGOING' AND BLOCKADE_TYPE = 'AUTOMATIC'", (blockade[0],))
                         db.commit()
 
                 return jsonify({"message": "Blockades checked"}), 200
@@ -55,7 +56,7 @@ login_manager = LoginManager(app)
 @login_manager.user_loader
 def load_user(user_id):
     db = get_db()
-    cur = db.execute("SELECT USERNAME FROM BOSSES WHERE ID = ?", (user_id,))
+    cur = db.execute("SELECT USERNAME FROM BOSSES WHERE USERNAME = ?", (user_id,))
     boss_data = cur.fetchone()
     if boss_data:
         return Boss(id=user_id, name=boss_data[0])

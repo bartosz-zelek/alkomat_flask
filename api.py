@@ -12,7 +12,7 @@ api = Blueprint('api', __name__)
 # Define a route to get readings from the database
 @api.route("/get_readings", defaults={"id": None})
 @api.route("/get_readings/<int:id>")
-@login_required  # Add this decorator to protect the route
+#@login_required  # Add this decorator to protect the route
 def get_readings(id):
     try:
         count = request.args.get("count", default=50, type=int)
@@ -23,6 +23,8 @@ def get_readings(id):
             cur = db.execute(
                 "SELECT date_time, name, surname, value FROM users INNER JOIN readings ON users.rfid = readings.rfid WHERE users.rfid = ? ORDER BY readings.date_time DESC LIMIT ? OFFSET ?", (id, count, offset)
             )
+            list_of_readings = cur.fetchall()
+            return jsonify(list_of_readings)
         else:
             cur = db.execute(
                 "SELECT date_time, name, surname, value FROM users INNER JOIN readings ON users.rfid = readings.rfid ORDER BY readings.date_time DESC LIMIT ? OFFSET ?", (count, offset)
