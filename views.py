@@ -161,7 +161,7 @@ def block_employee(id):
         db = get_db()
         db.execute("UPDATE users SET blocked = 1 WHERE rfid = ?", (id,))
         # Add new block to BLOCKADES table that lasts for a very long time (100 years from curdate)
-        db.execute("INSERT INTO BLOCKADES (RFID, BLOCKADE_TYPE, STATUS) VALUES (?, ?, ?)", (id, "MANUAL", "ONGOING"))
+        # db.execute("INSERT INTO BLOCKADES (RFID, BLOCKADE_TYPE, STATUS) VALUES (?, ?, ?)", (id, "MANUAL", "ONGOING"))
         db.commit()
         flash(f'Employee with rfid {id} blocked successfully!', 'danger')
     except sqlite3.Error as er:
@@ -179,7 +179,7 @@ def unblock_employee(id):
         # Try to update the worker status in the database
         db = get_db()
         db.execute("UPDATE users SET blocked = 0 WHERE rfid = ?", (id,))
-        db.execute("UPDATE BLOCKADES SET STATUS = 'DONE' WHERE RFID = ? AND STATUS = 'ONGOING'", (id,))
+        # db.execute("UPDATE BLOCKADES SET STATUS = 'DONE' WHERE RFID = ? AND STATUS = 'ONGOING'", (id,))
         db.commit()
         flash(f'Employee with rfid {id} unblocked successfully!', 'success')
     except sqlite3.Error as er:

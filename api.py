@@ -51,58 +51,67 @@ def check_rfid(rfid):
 
 
 # Define a route to add a reading to the database
-@api.route("/add_reading/<rfid>/<float:value>", methods=['GET'])
-def add_reading(rfid, value):
+@api.route("/add_reading/<rfid>/<int:value>/<int:ref_value>", methods=['GET'])
+def add_reading(rfid, value, ref_value):
     try:
         # Try to insert the reading into the database
+        # 'g' if all good, 'r' if drunk, 'b' if already blocked in DB, 'n' if RFID not recognized
         db = get_db()
         # Check if an employee is blocked
         cur = db.execute("SELECT BLOCKED FROM USERS WHERE RFID = ?", (rfid))
         blocked_status = cur.fetchone()
+        
+        if blocked_status is None:
+            return jsonify({"message": "n"}), 401
+        
         if blocked_status[0] == 1:
             # User is blocked, return error message
-            return jsonify({"message": "User is blocked"}), 403
+            return jsonify({"message": "b"}), 403
+        
         db.execute(
             "INSERT INTO readings (rfid, date_time, value) VALUES (?, ?, ?)",
-            (rfid, datetime.now(), value),
+            (rfid, datetime.now(), value / ref_value),
         )
         db.commit()
-        if check_for_block(rfid, block_time = 1) == 1:
-            return jsonify({"message": "Reading added, User is blocked"}), 200
-        return "Added", 200
+        
+        is_drunk = value / ref_value > 0.2 and ref_value - value > 5 and value < 70
+        if is_drunk:
+            return jsonify({"message": "r"}), 200
+        return jsonify({"message": "g"}), 200
+    
     except sqlite3.Error as er:
         # If an SQLite error occurs, return the error information as a response
         exc_type, exc_value, exc_tb = sys.exc_info()
         return traceback.format_exception(exc_type, exc_value, exc_tb)[-1], 500
     
 # Define checking if user should be blocked after adding reading
-def check_for_block(rfid, timeframe_for_measurments = 3, drunk_threshold = 0.2, block_time = 10):
-    try:
-        # Get last 3 readings from
-        db = get_db()
-        cur = db.execute(f"SELECT strftime('%Y-%m-%d %H:%M:%S', DATE_TIME), VALUE FROM READINGS WHERE RFID = ? ORDER BY DATE_TIME DESC LIMIT 3", (rfid))
-        readings = cur.fetchall()
+# def check_for_block(rfid, timeframe_for_measurments = 3, drunk_threshold = 0.2, block_time = 10):
+#     try:
+#         # Get last 3 readings from
+#         db = get_db()
+#         cur = db.execute(f"SELECT strftime('%Y-%m-%d %H:%M:%S', DATE_TIME), VALUE FROM READINGS WHERE RFID = ? ORDER BY DATE_TIME DESC LIMIT 3", (rfid))
+#         readings = cur.fetchall()
 
-        # Check if al of these reading were done in the last timeframe_for_measurments minutes
-        timeframe_for_measurments = 3
-        date_format = f"%Y-%m-%d %H:%M:%S"
-        if len(readings) < 3:
-            # There are not enough readings, return
-            return
-        for reading in readings:
-            reading = list(reading)
-            reading[0] = datetime.strptime(reading[0], date_format)
-            if reading[0] < datetime.now() - timedelta(minutes=timeframe_for_measurments):
-                # One of the readings was too old, return
-                return
-            if reading[1] < drunk_threshold:
-                # One of the readings was below drunk_threshold, return
-                return
+#         # Check if al of these reading were done in the last timeframe_for_measurments minutes
+#         timeframe_for_measurments = 3
+#         date_format = f"%Y-%m-%d %H:%M:%S"
+#         if len(readings) < 3:
+#             # There are not enough readings, return
+#             return
+#         for reading in readings:
+#             reading = list(reading)
+#             reading[0] = datetime.strptime(reading[0], date_format)
+#             if reading[0] < datetime.now() - timedelta(minutes=timeframe_for_measurments):
+#                 # One of the readings was too old, return
+#                 return
+#             if reading[1] < drunk_threshold:
+#                 # One of the readings was below drunk_threshold, return
+#                 return
             
-        # If the loop ends, the employee is drunk, block him for block_time minutes
-        db.execute("UPDATE USERS SET BLOCKED = 1 WHERE RFID = ?", (rfid,))
-        db.execute("INSERT INTO BLOCKADES (RFID, START_DATE, END_DATE, BLOCKADE_TYPE, STATUS) VALUES (?, ?, ?, ?, ?)", (rfid, datetime.now(), datetime.now() + timedelta(minutes=block_time), "AUTOMATIC", "ONGOING"))
-        db.commit()
-        return 1
-    except Exception as e:
-        return jsonify({"message": str(e)}), 500
+#         # If the loop ends, the employee is drunk, block him for block_time minutes
+#         db.execute("UPDATE USERS SET BLOCKED = 1 WHERE RFID = ?", (rfid,))
+#         # db.execute("INSERT INTO BLOCKADES (RFID, START_DATE, END_DATE, BLOCKADE_TYPE, STATUS) VALUES (?, ?, ?, ?, ?)", (rfid, datetime.now(), datetime.now() + timedelta(minutes=block_time), "AUTOMATIC", "ONGOING"))
+#         db.commit()
+#         return 1
+#     except Exception as e:
+#         return jsonify({"message": str(e)}), 500

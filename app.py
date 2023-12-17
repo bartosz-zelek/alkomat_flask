@@ -19,32 +19,32 @@ def create_app():
     app.register_blueprint(views)
     app.register_blueprint(api, url_prefix="/api")
 
-    def check_blockades():
-        try:
-            with app.app_context():
-                db = get_db()
-                # Get all blockades that are automatic and have ended yet and that started after last usage of this function (set in a parameter)
-                cur = db.execute(F"SELECT RFID, strftime('%Y-%m-%d %H:%M:%S', END_DATE) FROM BLOCKADES WHERE BLOCKADE_TYPE = ? AND END_DATE < ? AND STATUS = 'ONGOING'", ("AUTOMATIC", datetime.now()))
-                blockades = cur.fetchall()
+    # def check_blockades():
+        # try:
+        #     with app.app_context():
+        #         db = get_db()
+        #         # Get all blockades that are automatic and have ended yet and that started after last usage of this function (set in a parameter)
+        #         cur = db.execute(F"SELECT RFID, strftime('%Y-%m-%d %H:%M:%S', END_DATE) FROM BLOCKADES WHERE BLOCKADE_TYPE = ? AND END_DATE < ? AND STATUS = 'ONGOING'", ("AUTOMATIC", datetime.now()))
+        #         blockades = cur.fetchall()
 
-                for blockade in blockades:
-                    blockade = list(blockade)
-                    # Check if blockade has ended
-                    if datetime.strptime(blockade[1], f"%Y-%m-%d %H:%M:%S") < datetime.now():
-                        # Blockade has ended, update the BLOCKED status of the user to 0
-                        db.execute("UPDATE USERS SET BLOCKED = 0 WHERE RFID = ?", (blockade[0],))
-                        db.commit()
+        #         for blockade in blockades:
+        #             blockade = list(blockade)
+        #             # Check if blockade has ended
+        #             if datetime.strptime(blockade[1], f"%Y-%m-%d %H:%M:%S") < datetime.now():
+        #                 # Blockade has ended, update the BLOCKED status of the user to 0
+        #                 db.execute("UPDATE USERS SET BLOCKED = 0 WHERE RFID = ?", (blockade[0],))
+        #                 db.commit()
 
-                return jsonify({"message": "Blockades checked"}), 200
+        #         return jsonify({"message": "Blockades checked"}), 200
 
-        except Exception as e:
-            return jsonify({"message": str(e)}), 500
+        # except Exception as e:
+        #     return jsonify({"message": str(e)}), 500
         
-    check_blockades()
+    # check_blockades()
 
-    scheduler = BackgroundScheduler()
-    scheduler.add_job(func=check_blockades, trigger="interval", seconds=60)
-    scheduler.start()
+    # scheduler = BackgroundScheduler()
+    # scheduler.add_job(func=check_blockades, trigger="interval", seconds=60)
+    # scheduler.start()
 
     return app
 

@@ -17,12 +17,13 @@ class ArduinoComs:
         ref_val = int(self.arduino.readline())
         meas_val = int(self.arduino.readline())
         print('Line read - ref_val is {}, meas_val is {}'.format(ref_val, meas_val))
-        is_drunk = meas_val / ref_val > 0.2 and ref_val - meas_val > 5 and meas_val < 70
+        # is_drunk = meas_val / ref_val > 0.2 and ref_val - meas_val > 5 and meas_val < 70
         # TODO: maybe rewrite using ?rfid=rfid etc. if possible
         # 'g' if all good, 'r' if drunk, 'b' if already blocked in DB, 'n' if RFID not recognized
         # not tested, server not ready to respond just yet
-        response = requests.get('http://localhost:5000/api/add_reading/{}/{}'.format(rfid, is_drunk))
-        response_char = response.text
+        response = requests.get('http://localhost:5000/api/add_reading/{}/{}/{}'.format(rfid, meas_val, ref_val))
+        response_json = response.json()
+        response_char = response_json["message"]
         self.arduino.write(bytes(response_char, 'ascii'))
         print('Info sent to Arduino')
         
