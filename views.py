@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, flash, request, abort, redirect, current_app
+from flask import Blueprint, render_template, flash, request, redirect, current_app
 from flask_login import login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from boss import Boss
@@ -9,9 +9,6 @@ import sqlite3
 import sys
 import traceback
 from db import get_db, init_db
-from datetime import datetime
-from flask import jsonify
-from datetime import datetime, timedelta
 
 views = Blueprint('views', __name__)
 
@@ -40,9 +37,11 @@ def register_boss(username, password):
 
 
 @views.route("/")
-@login_required  # Add this decorator to protect the route
+#@login_required  # Add this decorator to protect the route
 def index():
     try:
+        if not current_user.is_authenticated:
+            return redirect('/login')
         # Try to render the home.html template
         return render_template("home.html")
     except sqlite3.Error as er:
@@ -162,7 +161,7 @@ def block_employee(id):
         db = get_db()
         db.execute("UPDATE users SET blocked = 1 WHERE rfid = ?", (id,))
         # Add new block to BLOCKADES table that lasts for a very long time (100 years from curdate)
-        db.execute("INSERT INTO BLOCKADES (RFID, BLOCKADE_TYPE) VALUES (?, ?)", (id, "MANUAL"))
+        db.execute("INSERT INTO BLOCKADES (RFID, BLOCKADE_TYPE, STATUS) VALUES (?, ?, ?)", (id, "MANUAL", "ONGOING"))
         db.commit()
         flash(f'Employee with rfid {id} blocked successfully!', 'danger')
     except sqlite3.Error as er:
@@ -180,6 +179,7 @@ def unblock_employee(id):
         # Try to update the worker status in the database
         db = get_db()
         db.execute("UPDATE users SET blocked = 0 WHERE rfid = ?", (id,))
+        db.execute("UPDATE BLOCKADES SET STATUS = 'DONE' WHERE RFID = ? AND STATUS = 'ONGOING'", (id,))
         db.commit()
         flash(f'Employee with rfid {id} unblocked successfully!', 'success')
     except sqlite3.Error as er:

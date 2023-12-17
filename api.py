@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, request, abort
+from flask import Blueprint, jsonify, request, abort, current_app
 from db import get_db
 from flask_login import login_required
 import sqlite3
@@ -21,11 +21,11 @@ def get_readings(id):
         db = get_db()
         if id:
             cur = db.execute(
-                "SELECT date_time, name, surname, value FROM users INNER JOIN readings ON users.rfid = readings.fk_rfid WHERE users.rfid = ? ORDER BY readings.date_time DESC LIMIT ? OFFSET ?", (id, count, offset)
+                "SELECT date_time, name, surname, value FROM users INNER JOIN readings ON users.rfid = readings.rfid WHERE users.rfid = ? ORDER BY readings.date_time DESC LIMIT ? OFFSET ?", (id, count, offset)
             )
         else:
             cur = db.execute(
-                "SELECT date_time, name, surname, value FROM users INNER JOIN readings ON users.rfid = readings.fk_rfid ORDER BY readings.date_time DESC LIMIT ? OFFSET ?", (count, offset)
+                "SELECT date_time, name, surname, value FROM users INNER JOIN readings ON users.rfid = readings.rfid ORDER BY readings.date_time DESC LIMIT ? OFFSET ?", (count, offset)
             )
         list_of_readings = cur.fetchall()
         return jsonify(list_of_readings), 200
@@ -67,8 +67,8 @@ def add_reading(rfid, value):
             (rfid, datetime.now(), value),
         )
         db.commit()
-        if check_for_block(rfid) == 1:
-            return jsonify({"message": "Reading added, User is blocked"}), 403
+        if check_for_block(rfid, block_time = 1) == 1:
+            return jsonify({"message": "Reading added, User is blocked"}), 200
         return "Added", 200
     except sqlite3.Error as er:
         # If an SQLite error occurs, return the error information as a response
@@ -84,8 +84,11 @@ def check_for_block(rfid, timeframe_for_measurments = 3, drunk_threshold = 0.2, 
         readings = cur.fetchall()
 
         # Check if al of these reading were done in the last timeframe_for_measurments minutes
-        timeframe_for_measurments = 120
+        timeframe_for_measurments = 3
         date_format = f"%Y-%m-%d %H:%M:%S"
+        if len(readings) < 3:
+            # There are not enough readings, return
+            return
         for reading in readings:
             reading = list(reading)
             reading[0] = datetime.strptime(reading[0], date_format)
@@ -95,68 +98,11 @@ def check_for_block(rfid, timeframe_for_measurments = 3, drunk_threshold = 0.2, 
             if reading[1] < drunk_threshold:
                 # One of the readings was below drunk_threshold, return
                 return
-            reading = tuple(reading)
             
         # If the loop ends, the employee is drunk, block him for block_time minutes
         db.execute("UPDATE USERS SET BLOCKED = 1 WHERE RFID = ?", (rfid,))
-        db.execute("INSERT INTO BLOCKADES (RFID, START_DATE, END_DATE, BLOCKADE_TYPE) VALUES (?, ?, ?, ?)", (rfid, datetime.now(), datetime.now() + timedelta(minutes=block_time), "AUTOMATIC"))
+        db.execute("INSERT INTO BLOCKADES (RFID, START_DATE, END_DATE, BLOCKADE_TYPE, STATUS) VALUES (?, ?, ?, ?, ?)", (rfid, datetime.now(), datetime.now() + timedelta(minutes=block_time), "AUTOMATIC", "ONGOING"))
         db.commit()
         return 1
-    except Exception as e:
-        return jsonify({"message": str(e)}), 500
-            
-        
-
-# @api.route("/start_measurement/<rfid>", methods=['POST'])
-# def start_measurement(rfid):
-#     try:
-#         # Check if the user is already blocked
-#         db = get_db()
-#         blocked_status = db.execute("SELECT BLOCKED FROM USERS WHERE ID = ?", (rfid))
-
-#         if blocked_status == 1:
-#             # User is blocked, return error message
-#             return jsonify({"message": "User is blocked"}), 403
-         
-#         # Get last 3 readings fromn user
-
-
-            
-#         # If the loop ends, the employee is drunk, block him
-#         db.execute("UPDATE USERS SET BLOCKED = 1 WHERE ID = ?", (rfid))
-
-#         # Add new record to BLOCKADES table with blockade ending time being set for some custom duration time (10 minutes) and starting time being current time
-#         blockade_duration = 10
-#         blockade_end_time = datetime.now() + timedelta(minutes=blockade_duration)
-
-#         #Cut blockade end time to seconds
-#         blockade_end_time = blockade_end_time.replace(microsecond=0)
-
-#         db.execute("INSERT INTO BLOCKADES (RFID, START_DATE, END_DATE, BLOCKADE_TYPE) VALUES (?, ?, ?, ?)", (rfid, datetime.now(), blockade_end_time, "AUTOMATIC"))
-#         db.commit()
-
-#         return jsonify({"message": f"User blocked for {blockade_duration} minutes"}), 200
-
-#     except Exception as e:
-#         return jsonify({"message": str(e)}), 500
-    
-# Add function that runs itself every minute and checks if any blockade has ended, if so update the BLOCKED status of the user to 0
-@api.route("/check_blockades")
-def check_blockades(time_since_last_check):
-    try:
-        db = get_db()
-        # Get all blockades that are automatic and have ended yet and that started after last usage of this function (set in a parameter)
-        cur = db.execute("SELECT * FROM BLOCKADES WHERE BLOCKADE_TYPE = ? AND END_DATE < ? AND START_DATE > ?", ("AUTOMATIC", datetime.now(), time_since_last_check))
-        blockades = cur.fetchall()
-
-        for blockade in blockades:
-            # Check if blockade has ended
-            if blockade[3] < datetime.now():
-                # Blockade has ended, update the BLOCKED status of the user to 0
-                db.execute("UPDATE USERS SET BLOCKED = 0 WHERE RFID = ?", (blockade[1]))
-                db.commit()
-
-        return jsonify({"message": "Blockades checked"}), 200
-
     except Exception as e:
         return jsonify({"message": str(e)}), 500
