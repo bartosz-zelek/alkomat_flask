@@ -1,11 +1,11 @@
-from flask import Flask, g, jsonify
+from flask import Flask, g
 from flask_login import LoginManager
 from boss import Boss
 from db import get_db, init_db
 from api import api
 from views import views
 from apscheduler.schedulers.background import BackgroundScheduler
-from datetime import datetime, timedelta
+from helpers import check_blockades
 
 
 # Define the path to the SQLite database file
@@ -19,30 +19,8 @@ def create_app():
     app.register_blueprint(views)
     app.register_blueprint(api, url_prefix="/api")
 
-    def check_blockades():
-        try:
-            with app.app_context():
-                db = get_db()
-                # Get all blockades that are automatic and have ended yet and that started after last usage of this function (set in a parameter)
-                cur = db.execute(F"SELECT RFID, strftime('%Y-%m-%d %H:%M:%S', END_DATE) FROM BLOCKADES WHERE BLOCKADE_TYPE = ? AND END_DATE < ? AND STATUS = 'ONGOING'", ("AUTOMATIC", datetime.now()))
-                blockades = cur.fetchall()
-
-                for blockade in blockades:
-                    blockade = list(blockade)
-                    # Check if blockade has ended
-                    if datetime.strptime(blockade[1], f"%Y-%m-%d %H:%M:%S") < datetime.now():
-                        # Blockade has ended, update the BLOCKED status of the user to 0
-                        db.execute("UPDATE USERS SET BLOCKED = 0 WHERE RFID = ?", (blockade[0],))
-                        db.execute("UPDATE BLOCKADES SET STATUS = 'DONE' WHERE RFID = ? AND STATUS = 'ONGOING' AND BLOCKADE_TYPE = 'AUTOMATIC'", (blockade[0],))
-                        db.commit()
-
-                return jsonify({"message": "Blockades checked"}), 200
-
-        except Exception as e:
-            return jsonify({"message": str(e)}), 500
-
     scheduler = BackgroundScheduler()
-    scheduler.add_job(func=check_blockades, trigger="interval", seconds=60)
+    scheduler.add_job(func=check_blockades, trigger="interval", seconds=60, args=[app])
     scheduler.start()
 
     return app

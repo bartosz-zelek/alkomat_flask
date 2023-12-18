@@ -1,11 +1,10 @@
-from flask import Blueprint, jsonify, request, abort, current_app, flash
+from flask import Blueprint, jsonify, request, abort
 from db import get_db
-from flask_login import login_required
 import sqlite3
 import sys
 import traceback
-from datetime import datetime, timedelta
-from helpers import get_readings_internal, add_employee_to_database, check_for_block, get_sober_readings_data, get_sober_readings_histogram, get_blocks_number_data, get_blocks_number_histogram
+from datetime import datetime
+from helpers import get_readings_internal, check_for_block, get_sober_readings_data, get_sober_readings_histogram, get_blocks_number_data, get_blocks_number_histogram
 
 api = Blueprint('api', __name__)
 
@@ -16,8 +15,10 @@ api = Blueprint('api', __name__)
 #@login_required  # Add this decorator to protect the route
 def get_readings(id):
     try:
+        # Get count and offset parameters from the request or use default values
         count = request.args.get("count", default=50, type=int)
         offset = request.args.get("offset", default=0, type=int)
+        
         # Try to get readings from the database
         list_of_readings = get_readings_internal(count, offset, id)
         return jsonify(list_of_readings), 200
@@ -47,12 +48,14 @@ def add_reading(rfid, value):
     try:
         # Try to insert the reading into the database
         db = get_db()
+        
         # Check if an employee with the given RFID exists
         cur = db.execute("SELECT * FROM USERS WHERE RFID = ?", (rfid,))
         user = cur.fetchone()
         if not user:
             # User does not exist, return error message
             return jsonify({"message": "User does not exist"}), 404
+        
         # Check if an employee is blocked
         cur = db.execute("SELECT BLOCKED FROM USERS WHERE RFID = ?", (rfid,))
         blocked_status = cur.fetchone()
@@ -60,17 +63,21 @@ def add_reading(rfid, value):
         if blocked_status[0] == 1:
             # User is blocked, return error message
             return jsonify({"message": "User is blocked"}), 403
+        
+        # Insert the reading into the database
         db.execute(
             "INSERT INTO readings (rfid, date_time, value) VALUES (?, ?, ?)",
             (rfid, datetime.now(), value),
         )
         db.commit()
+        
+        # Check if user should be blocked
         try:
-            # Check if user should be blocked
             if check_for_block(rfid, block_time=1) == 1:
                 return jsonify({"message": "Reading added. User blocked."}), 200
         except Exception as e:
             return jsonify({"message": str(e)}), 500
+        
         return "Added", 200
     except sqlite3.Error as er:
         # If an SQLite error occurs, return the error information as a response

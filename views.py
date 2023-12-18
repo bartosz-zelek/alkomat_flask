@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, flash, request, redirect, current_app, url_for, jsonify
+from flask import Blueprint, render_template, flash, request, redirect, current_app, jsonify
 from flask_login import login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from boss import Boss
@@ -9,10 +9,7 @@ import sqlite3
 import sys
 import traceback
 from db import get_db, init_db
-from helpers import get_readings_internal
-import requests
-import json
-from api import add_employee_to_database
+from helpers import add_employee_to_database
 
 views = Blueprint('views', __name__)
 
