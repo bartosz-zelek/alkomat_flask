@@ -1,9 +1,8 @@
 {% extends "layout.html" %}
 {% block title %}Live Records - Alkomat{% endblock %}
 {% block content %}
-<div class="row mt-5">
-    <div class="col-2">
-        <h2>Live Records</h2>
+    <div>
+        <p class="fs-1 fw-bold text-center">Live Records</p>
         <table class="table table-striped">
             <thead>
                 <tr>
@@ -17,11 +16,9 @@
             <tbody id="liveRecordsTableBody"></tbody>
         </table>
     </div>
-    <div class="col-2">
-        <!-- Button to redirect to the home page -->
+    <div>
         <a href="/" class="btn btn-primary mt-3">Back to Home</a>
     </div>
-</div>
 
 <script src= "{{ url_for('static', filename='live_records.js') }}"> </script>
 

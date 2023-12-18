@@ -3,8 +3,7 @@
 Register - Alkomat
 {% endblock %}
 {% block content %}
-<div class="row mt-5">
-    <div class="col-4 offset-4">
+<div>
         <h2>Register Boss</h2>
         <form action="/register" method="post">
             {{ form.hidden_tag() }}
@@ -29,10 +28,10 @@ Register - Alkomat
                     <p class="text-danger">{{ error }}</p>
                 {% endfor %}
             </div>
-            <button type="submit" class="btn btn-primary">Register</button>
+            <button type="submit" class="btn btn-primary  mx-auto d-block">Register</button>
         </form>
-        <a href="/login" class="btn btn-secondary mt-3">Already have an account? Login</a>
-    </div>
+        <hr class="mr-2">
+        <a href="/login" class="btn btn-secondary mt-3 d-block mx-auto">Already have an account? Login</a>
 </div>
 
 {% endblock %}

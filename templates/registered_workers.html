@@ -1,37 +1,11 @@
 {% extends "layout.html" %}
 {% block title %}Registered Workers{% endblock %}
 {% block content %}
-<div class="row mt-5">
-    <div class="col-2">
-        <h2>Registered Workers</h2>
-        <table class="table table-striped">
-            <thead>
-            {% for worker in workers %}
-                <tr>
-                    <th scope="row">{{worker.id}}</th>
-                    <td>{{worker.name}}</td>
-                    <td>{{worker.surname}}</td>
-                    <td>
-                        <!-- Button for deleting employee with warning about severity of action before deleting -->
-                        <a href="/delete_employee/{{worker.id}}" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete this employee? This is a severe action and cannot be undone.');">Delete</a>
-                        {# add blocking/unblocking employee depending on his "blocked" field#}
-                        {% if worker.blocked == 0 %}
-                            <a href="/block_employee/{{worker.id}}" class="btn btn-warning">Block</a>
-                        {% else %}
-                            <a href="/unblock_employee/{{worker.id}}" class="btn btn-success">Unblock</a>
-                        {% endif %}
-                    </td>
-                    <td><a href="{{ url_for('views.readings_table', id=worker.id) }}">Live Records</a></td>
-                </tr>
-            {% endfor%}
-            </thead>
-            <tbody id="workersTableBody"></tbody>
-        </table>
-    </div>
-    <div class="col-8">
+<div class="row">
+    <div class="col m-5">
         <!-- Form for adding a new worker -->
         <form action="/add_employee" method="post">
-            <h2>Add New Employee</h2>
+            <p class="fs-3 fw-bold text-center">Add New Employee</p>
             <div class="mb-3">
                 <label for="newEmployeeRfid" class="form-label">Rfid</label>
                 <input type="text" class="form-control" id="newEmployeeRfid" name="rfid" required>
@@ -44,14 +18,53 @@
                 <label for="newEmployeeSurname" class="form-label">Surname</label>
                 <input type="text" class="form-control" id="newEmployeeSurname" name="surname" required>
             </div>
-            <button type="submit" class="btn btn-primary">Add Employee</button>
+            <button type="submit" class="btn btn-success mx-auto d-block">Add Employee</button>
         </form>
-        
+
     </div>
-    <div class="col-2">
-        <!-- Button to redirect to the home page -->
-        <a href="/" class="btn btn-primary mt-3">Back to Home</a>
+    <div class="col m-5">
+        <p class="fs-3 fw-bold text-center">Registered Workers</p>
+
+        <table class="table table-striped text-center">
+            <thead>
+                <tr>
+                    <th scope="col">#</th>
+                    <th scope="col">Name</th>
+                    <th scope="col">Surname</th>
+                    <th scope="col">Delete</th>
+                    <th scope="col">Block/Unblock</th>
+                    <th scope="col">LiveRecords</th>
+                </tr>
+            </thead>
+            <tbody id="workersTableBody">
+                {% for worker in workers %}
+                <tr>
+                    <th scope="row">{{worker.id}}</th>
+                    <td>{{worker.name}}</td>
+                    <td>{{worker.surname}}</td>
+                    <td>
+                        <!-- Button for deleting employee with warning about severity of action before deleting -->
+                        <a href="/delete_employee/{{worker.id}}" class="btn btn-danger mx-auto d-block"
+                            onclick="return confirm('Are you sure you want to delete this employee? This is a severe action and cannot be undone.');">Delete</a>
+                    </td>
+                    <td>
+                        {# add blocking/unblocking employee depending on his "blocked" field#}
+                        {% if worker.blocked == 0 %}
+                        <a href="/block_employee/{{worker.id}}" class="btn btn-warning mx-auto d-block">Block</a>
+                        {% else %}
+                        <a href="/unblock_employee/{{worker.id}}" class="btn btn-success mx-auto d-block">Unblock</a>
+                        {% endif %}
+                    </td>
+                    <td><a href="{{ url_for('views.readings_table', id=worker.id) }}" class="btn btn-success mx-auto d-block">Records</a></td>
+                </tr>
+                {% endfor%}
+            </tbody>
+        </table>
     </div>
+</div>
+<hr>
+<div>
+    <a href="/" class="btn btn-primary mt-3">Back to Home</a>
 </div>
 
 {% endblock %}

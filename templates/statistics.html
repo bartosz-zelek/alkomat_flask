@@ -1,10 +1,20 @@
 {% extends "layout.html" %}
 {% block title %}
-    Statistics
+Statistics
 {% endblock %}
 {% block content %}
-    <h1>Statistics</h1>
-    <img id="soberReadingsHistogram" src="/static/sober_readings_histogram.png" alt="Sober Readings Histogram">
-    <img id="blocksNumberHistogram" src="/static/blocks_number_histogram.png" alt="Blocks Number Histogram">
-    <script src="{{ url_for('static', filename='statistics.js') }}"></script>
+<p class="fs-1 fw-bold text-center">Statistics</p>
+<div class="row">
+    <div class="col"> <img id="soberReadingsHistogram" src="/static/sober_readings_histogram.png"
+            alt="Sober Readings Histogram"></div>
+    <div class="col"> <img id="blocksNumberHistogram" src="/static/blocks_number_histogram.png"
+            alt="Blocks Number Histogram"></div>
+
+</div>
+<hr>
+<div>
+    <!-- Button to redirect to the home page -->
+    <a href="/" class="btn btn-primary mt-3">Back to Home</a>
+</div>
+<script src="{{ url_for('static', filename='statistics.js') }}"></script>
 {% endblock %}
