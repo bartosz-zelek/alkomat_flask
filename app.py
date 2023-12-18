@@ -40,8 +40,6 @@ def create_app():
 
         except Exception as e:
             return jsonify({"message": str(e)}), 500
-        
-    #check_blockades()
 
     scheduler = BackgroundScheduler()
     scheduler.add_job(func=check_blockades, trigger="interval", seconds=60)

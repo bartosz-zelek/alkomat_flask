@@ -20,6 +20,7 @@
                             <a href="/unblock_employee/{{worker.id}}" class="btn btn-success">Unblock</a>
                         {% endif %}
                     </td>
+                    <td><a href="{{ url_for('views.readings_table', id=worker.id) }}">Live Records</a></td>
                 </tr>
             {% endfor%}
             </thead>
@@ -30,6 +31,10 @@
         <!-- Form for adding a new worker -->
         <form action="/add_employee" method="post">
             <h2>Add New Employee</h2>
+            <div class="mb-3">
+                <label for="newEmployeeRfid" class="form-label">Rfid</label>
+                <input type="text" class="form-control" id="newEmployeeRfid" name="rfid" required>
+            </div>
             <div class="mb-3">
                 <label for="newEmployeeName" class="form-label">Name</label>
                 <input type="text" class="form-control" id="newEmployeeName" name="name" required>
