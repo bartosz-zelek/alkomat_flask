@@ -73,7 +73,7 @@ def check_for_block(rfid, timeframe_for_measurments = 3, drunk_threshold = 0.2, 
 def get_sober_readings_data(drunk_threshold):
     try:
         db = get_db()
-        cur = db.execute("SELECT R.RFID, U.NAME, U.SURNAME, COUNT(*), (SELECT COUNT(*) FROM READINGS WHERE RFID = R.RFID) FROM READINGS R INNER JOIN USERS U ON R.RFID = U.RFID WHERE VALUE < ? GROUP BY R.RFID", (drunk_threshold,))
+        cur = db.execute("SELECT R.RFID, U.NAME, U.SURNAME, COUNT(*), (SELECT COUNT(*) FROM READINGS WHERE RFID = R.RFID) FROM READINGS R LEFT JOIN USERS U ON R.RFID = U.RFID WHERE VALUE < ? GROUP BY R.RFID", (drunk_threshold,))
         histogram_data = cur.fetchall()
 
         if not histogram_data:
@@ -112,7 +112,7 @@ def get_sober_readings_histogram(histogram_data, timestamp, drunk_threshold = 0.
 def get_blocks_number_data():
     try:
         db = get_db()
-        cur = db.execute("SELECT B.RFID, U.NAME, U.SURNAME, COUNT(*) FROM BLOCKADES B INNER JOIN USERS U ON B.RFID = U.RFID GROUP BY B.RFID")
+        cur = db.execute("SELECT B.RFID, U.NAME, U.SURNAME, COUNT(*) FROM BLOCKADES B LEFT JOIN USERS U ON B.RFID = U.RFID GROUP BY B.RFID")
         histogram_data = cur.fetchall()
 
         if not histogram_data:

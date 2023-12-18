@@ -85,8 +85,12 @@ def get_plots():
         # Try to get plots from the database
         drunk_threshold = 0.2
         sober_readings_data, timestamp = get_sober_readings_data(drunk_threshold)
+        if sober_readings_data == "No records found":
+            return jsonify({"message": "No records found"}), 404
         sober_readings_histogram = get_sober_readings_histogram(drunk_threshold=drunk_threshold, histogram_data=sober_readings_data, timestamp=timestamp)
         blocks_number_data = get_blocks_number_data()
+        if blocks_number_data == "No records found":
+            return jsonify({"message": "No records found"}), 404
         blocks_number_histogram = get_blocks_number_histogram(blocks_number_data)
         return jsonify({"sober_readings_data": sober_readings_data, "sober_readings_histogram": sober_readings_histogram, "blocks_number_data": blocks_number_data, "blocks_number_histogram": blocks_number_histogram}), 200
     except sqlite3.Error as er:
