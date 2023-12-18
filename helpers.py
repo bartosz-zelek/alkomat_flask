@@ -50,27 +50,27 @@ def add_employee_to_database(rfid, name, surname):
 
 # This function checks if a user should be blocked based on recent readings.
 # It updates the database accordingly and returns 1 if the user is blocked, or None if not.
-def check_for_block(rfid, timeframe_for_measurements=3, drunk_threshold=0.2, block_time=10):
+def check_for_block(rfid, block_time=10):
     try:
         # Get the last 3 readings from the database for the specified RFID
         db = get_db()
-        cur = db.execute("SELECT strftime('%Y-%m-%d %H:%M:%S', DATE_TIME), VALUE FROM READINGS WHERE RFID = ? ORDER BY DATE_TIME DESC LIMIT 3", (rfid,))
-        readings = cur.fetchall()
+        # cur = db.execute("SELECT strftime('%Y-%m-%d %H:%M:%S', DATE_TIME), VALUE FROM READINGS WHERE RFID = ? ORDER BY DATE_TIME DESC LIMIT 3", (rfid,))
+        # readings = cur.fetchall()
 
-        # Check if all of these readings were done in the last 'timeframe_for_measurements' minutes
-        date_format = "%Y-%m-%d %H:%M:%S"
-        if len(readings) < 3:
-            # There are not enough readings, return
-            return
-        for reading in readings:
-            reading = list(reading)
-            reading[0] = datetime.strptime(reading[0], date_format)
-            if reading[0] < datetime.now() - timedelta(minutes=timeframe_for_measurements):
-                # One of the readings was too old, return
-                return
-            if reading[1] < drunk_threshold:
-                # One of the readings was below drunk_threshold, return
-                return
+        # # Check if all of these readings were done in the last 'timeframe_for_measurements' minutes
+        # date_format = "%Y-%m-%d %H:%M:%S"
+        # if len(readings) < 3:
+        #     # There are not enough readings, return
+        #     return
+        # for reading in readings:
+        #     reading = list(reading)
+        #     reading[0] = datetime.strptime(reading[0], date_format)
+        #     if reading[0] < datetime.now() - timedelta(minutes=timeframe_for_measurements):
+        #         # One of the readings was too old, return
+        #         return
+        #     if reading[1] < drunk_threshold:
+        #         # One of the readings was below drunk_threshold, return
+        #         return
             
         # If the loop ends, the employee is drunk, block him for 'block_time' minutes
         db.execute("UPDATE USERS SET BLOCKED = 1 WHERE RFID = ?", (rfid,))

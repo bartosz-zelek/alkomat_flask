@@ -43,8 +43,8 @@ def check_rfid(rfid):
 
 
 # Define a route to add a reading to the database
-@api.route("/add_reading/<rfid>/<float:value>", methods=['GET'])
-def add_reading(rfid, value):
+@api.route("/add_reading/<rfid>/<int:value>/<int:ref_value>", methods=['GET'])
+def add_reading(rfid, value, ref_value):
     try:
         # Try to insert the reading into the database
         db = get_db()
@@ -54,7 +54,7 @@ def add_reading(rfid, value):
         user = cur.fetchone()
         if not user:
             # User does not exist, return error message
-            return jsonify({"message": "User does not exist"}), 404
+            return jsonify({"message": "USER DOESN'T EXIST"}), 404
         
         # Check if an employee is blocked
         cur = db.execute("SELECT BLOCKED FROM USERS WHERE RFID = ?", (rfid,))
@@ -62,23 +62,25 @@ def add_reading(rfid, value):
         print(f"Bloked status: {blocked_status[0]}")
         if blocked_status[0] == 1:
             # User is blocked, return error message
-            return jsonify({"message": "User is blocked"}), 403
+            return jsonify({"message": "USER BLOCKED"}), 403
         
         # Insert the reading into the database
         db.execute(
             "INSERT INTO readings (rfid, date_time, value) VALUES (?, ?, ?)",
-            (rfid, datetime.now(), value),
+            (rfid, datetime.now(), 1-value/ref_value),
         )
         db.commit()
         
         # Check if user should be blocked
         try:
-            if check_for_block(rfid, block_time=1) == 1:
-                return jsonify({"message": "Reading added. User blocked."}), 200
+            is_drunk = value / ref_value > 0.2 and ref_value - value > 5 and value < 70
+            if is_drunk:
+                check_for_block(rfid)
+                return jsonify({"message": "ENTRY BLOCKED"}), 200
         except Exception as e:
             return jsonify({"message": str(e)}), 500
         
-        return "Added", 200
+        return jsonify({"message": "ACCEPTED"}), 200
     except sqlite3.Error as er:
         # If an SQLite error occurs, return the error information as a response
         exc_type, exc_value, exc_tb = sys.exc_info()
