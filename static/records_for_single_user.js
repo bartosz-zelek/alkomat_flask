@@ -12,9 +12,9 @@ function set_record_updater(user_id) {
                     <td>${reading[0]}</td>
                     <td>${reading[1]} ${reading[2]}</td>
                     <td>${reading[3]}‰</td>
-                    <td>${reading[3] <= 0.2 ? "Dopuszczony" : "Niedopuszczony"}</td>
+                    <td>${reading[3] < 0.2 ? "Admitted" : "Not admitted"}</td>
                     `;
-                    if (reading[3] <= 0.2) {
+                    if (reading[3] < 0.2) {
                         row.classList.add('table-success');
                     } else {
                         row.classList.add('table-danger');

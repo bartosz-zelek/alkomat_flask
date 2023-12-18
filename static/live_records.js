@@ -11,9 +11,9 @@ setInterval(() => {
                 <td>${reading[0]}</td>
                 <td>${reading[1]} ${reading[2]}</td>
                 <td>${reading[3]}‰</td>
-                <td>${reading[3] <= 0.2 ? "Dopuszczony" : "Niedopuszczony"}</td>
+                <td>${reading[3] < 0.2 ? "Dopuszczony" : "Niedopuszczony"}</td>
                 `;
-                if (reading[3] <= 0.2) {
+                if (reading[3] < 0.2) {
                     row.classList.add('table-success');
                 } else {
                     row.classList.add('table-danger');

@@ -1,17 +1,11 @@
 {% extends "layout.html" %}
-{% block title %}Home Page - Alkomat{% endblock %}
+{% block title %}Home Page - Alkomat®{% endblock %}
 {% block content %}
-<p class="fs-1 fw-bold text-center">Welcome to Alkomat Home</p>
+<p class="fs-1 fw-bold text-center">Welcome to Alkomat® Home</p>
 <p class="text-light">Choose an option from the buttons below.</p>
 <div>
     <a href="/registered_workers" class="btn btn-primary mt-3 d-block mx-auto">Registered Workers</a>
-    <!-- <form action="/live_records" method="get" class="mb-3">
-        <button type="submit" class="btn btn-primary btn-lg btn-block py-3">Live Records</button>
-    </form> -->
     <a href="/live_records" class="btn btn-primary mt-3 d-block mx-auto">Live Records</a>
-    <!-- <form action="/statistics" method="get" class="mb-3">
-        <button type="submit" class="btn btn-primary btn-lg btn-block py-3">Statistics</button>
-    </form> -->
     <a href="/statistics" class="btn btn-primary mt-3 d-block mx-auto">Statistics</a>
     <hr>
     <!-- Button for loggin out implementing views/logout -->
