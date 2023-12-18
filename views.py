@@ -110,7 +110,7 @@ def register():
 
     return render_template('register.html', form=form)
 
-@views.route('/logout')
+@views.route('/logout', methods=['POST'])
 @login_required  # Add this decorator to protect the route
 def logout():
     logout_user()  # Log out the user
@@ -248,3 +248,8 @@ def drop_and_reload_database():
 def readings_table(id):
     # Make a request to the get_readings API
     return render_template("records_for_single_user.html", user_id=id)
+
+@views.route("/statistics")
+@login_required
+def statistics():
+    return render_template("statistics.html")

@@ -1,0 +1,10 @@
+{% extends "layout.html" %}
+{% block title %}
+    Statistics
+{% endblock %}
+{% block content %}
+    <h1>Statistics</h1>
+    <img id="soberReadingsHistogram" src="/static/sober_readings_histogram.png" alt="Sober Readings Histogram">
+    <img id="blocksNumberHistogram" src="/static/blocks_number_histogram.png" alt="Blocks Number Histogram">
+    <script src="{{ url_for('static', filename='statistics.js') }}"></script>
+{% endblock %}

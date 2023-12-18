@@ -10,6 +10,13 @@
         <form action="/live_records" method="get" class="mb-3">
             <button type="submit" class="btn btn-primary btn-lg btn-block py-3">Live Records</button>
         </form>
+        <form action="/statistics" method="get" class="mb-3">
+            <button type="submit" class="btn btn-primary btn-lg btn-block py-3">Statistics</button>
+        </form>
+        <!-- Button for loggin out implementing views/logout -->
+        <form action="/logout" method="post" class="mb-3">
+            <button type="submit" class="btn btn-danger btn-lg btn-block py-3">Log Out</button>
+        </form>
         <form action="/drop_and_reload_database" method="post" class="mb-3" onsubmit="return confirm('Are you sure you want to drop and reload the database? This is a severe action and cannot be undone.');">
             <button type="submit" class="btn btn-warning btn-lg btn-block py-3">Drop and Reload Database</button>
         </form>

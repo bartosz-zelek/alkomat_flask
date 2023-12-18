@@ -5,7 +5,7 @@ import sqlite3
 import sys
 import traceback
 from datetime import datetime, timedelta
-from helpers import get_readings_internal, add_employee_to_database, check_for_block
+from helpers import get_readings_internal, add_employee_to_database, check_for_block, get_sober_readings_data, get_sober_readings_histogram, get_blocks_number_data, get_blocks_number_histogram
 
 api = Blueprint('api', __name__)
 
@@ -19,7 +19,6 @@ def get_readings(id):
         count = request.args.get("count", default=50, type=int)
         offset = request.args.get("offset", default=0, type=int)
         # Try to get readings from the database
-        db = get_db()
         list_of_readings = get_readings_internal(count, offset, id)
         return jsonify(list_of_readings), 200
     except sqlite3.Error as er:
@@ -33,7 +32,6 @@ def check_rfid(rfid):
     try:
         db = get_db()
         cur = db.execute("SELECT * FROM users WHERE rfid = ?", (rfid,))
-        #don't throw when not found
         user = cur.fetchone()
         if user:
             return jsonify({"id": user[0], "name": user[1], "surname": user[2], "blocked": user[3]}), 200
@@ -46,7 +44,6 @@ def check_rfid(rfid):
 # Define a route to add a reading to the database
 @api.route("/add_reading/<rfid>/<float:value>", methods=['GET'])
 def add_reading(rfid, value):
-    print(f"RFID: {rfid}, value: {value}")
     try:
         # Try to insert the reading into the database
         db = get_db()
@@ -70,7 +67,7 @@ def add_reading(rfid, value):
         db.commit()
         try:
             # Check if user should be blocked
-            if check_for_block(rfid) == 1:
+            if check_for_block(rfid, block_time=1) == 1:
                 return jsonify({"message": "Reading added. User blocked."}), 200
         except Exception as e:
             return jsonify({"message": str(e)}), 500
@@ -80,3 +77,19 @@ def add_reading(rfid, value):
         exc_type, exc_value, exc_tb = sys.exc_info()
         return traceback.format_exception(exc_type, exc_value, exc_tb)[-1], 500
     
+
+# Define route to get plots from helpers.py
+@api.route("/get_plots")
+def get_plots():
+    try:
+        # Try to get plots from the database
+        drunk_threshold = 0.2
+        sober_readings_data, timestamp = get_sober_readings_data(drunk_threshold)
+        sober_readings_histogram = get_sober_readings_histogram(drunk_threshold=drunk_threshold, histogram_data=sober_readings_data, timestamp=timestamp)
+        blocks_number_data = get_blocks_number_data()
+        blocks_number_histogram = get_blocks_number_histogram(blocks_number_data)
+        return jsonify({"sober_readings_data": sober_readings_data, "sober_readings_histogram": sober_readings_histogram, "blocks_number_data": blocks_number_data, "blocks_number_histogram": blocks_number_histogram}), 200
+    except sqlite3.Error as er:
+        # If an SQLite error occurs, return the error information as a response
+        exc_type, exc_value, exc_tb = sys.exc_info()
+        return traceback.format_exception(exc_type, exc_value, exc_tb)[-1], 500
