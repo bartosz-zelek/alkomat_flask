@@ -24,5 +24,8 @@
 </div>
 
 <script src="{{ url_for('static', filename='records_for_single_user.js') }}"></script>
+<script>
+    set_record_updater("{{ user_id }}")
+</script>
 
 {% endblock %}

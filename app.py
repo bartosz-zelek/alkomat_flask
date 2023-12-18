@@ -40,8 +40,6 @@ def create_app():
 
         except Exception as e:
             return jsonify({"message": str(e)}), 500
-        
-    check_blockades()
 
     scheduler = BackgroundScheduler()
     scheduler.add_job(func=check_blockades, trigger="interval", seconds=60)
@@ -56,7 +54,7 @@ login_manager = LoginManager(app)
 @login_manager.user_loader
 def load_user(user_id):
     db = get_db()
-    cur = db.execute("SELECT USERNAME FROM BOSSES WHERE USERNAME = ?", (user_id,))
+    cur = db.execute("SELECT USERNAME FROM BOSSES WHERE ID = ?", (user_id,))
     boss_data = cur.fetchone()
     if boss_data:
         return Boss(id=user_id, name=boss_data[0])

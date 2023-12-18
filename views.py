@@ -9,10 +9,10 @@ import sqlite3
 import sys
 import traceback
 from db import get_db, init_db
-from api import get_readings
+from helpers import get_readings_internal
 import requests
 import json
-
+from api import add_employee_to_database
 
 views = Blueprint('views', __name__)
 
@@ -27,8 +27,14 @@ def register_boss(username, password):
         # Hash the password
         password_hash = generate_password_hash(password, method='pbkdf2:sha256')
 
-        # Try to insert the boss into the BOSSES table
+        # Check if the username is already taken
         db = get_db()
+        cur = db.execute("SELECT ID FROM BOSSES WHERE USERNAME = ?", (username,))
+        if cur.fetchone():
+            # Username already taken, return error message
+            return "Username already taken", 400
+
+        # Try to insert the boss into the BOSSES table
         db.execute("INSERT INTO BOSSES (USERNAME, PASSWORD_HASH) VALUES (?, ?)", (username, password_hash))
         db.commit()
         return "Boss registered", 200
@@ -115,21 +121,30 @@ def logout():
 @views.route("/add_employee", methods=['POST'])
 @login_required
 def add_employee():
-    # id = request.args.get('id')
-    name = request.form.get('name')
-    surname = request.form.get('surname')
+    #Use add_employee_to_database from api.py
     try:
-        # Try to insert the employee into the database
+        rfid = request.form['rfid']
+        name = request.form['name']
+        surname = request.form['surname']
+
+        # Check if the employee with the given RFID already exists
         db = get_db()
-        db.execute("INSERT INTO users (NAME, SURNAME) VALUES  (?, ?)", (name, surname))
-        db.commit()
-        flash('Employee added successfully!', 'success')
+        cur = db.execute("SELECT * FROM USERS WHERE RFID = ?", (rfid,))
+        user = cur.fetchone()
+        if user:
+            # Employee already exists, return error message
+            return jsonify({"message": "Employee already exists"}), 400
+        
+        # Add employee to database
+        add_employee_to_database(rfid, name, surname)
+        flash(f'Employee with rfid {rfid} added successfully!', 'success')
         return redirect('/registered_workers')
     except sqlite3.Error as er:
         # If an SQLite error occurs, return the error information as a response
         exc_type, exc_value, exc_tb = sys.exc_info()
         return traceback.format_exception(exc_type, exc_value, exc_tb)[-1], 500
-    
+        
+
 # Delete employee
 @views.route("/delete_employee/<id>", methods=['GET'])
 @login_required
@@ -228,21 +243,8 @@ def drop_and_reload_database():
 
     return redirect('/register')
 
-@views.route("/readings_table/<int:id>")
+@views.route("/readings_table/<id>")
 #@login_required
 def readings_table(id):
     # Make a request to the get_readings API
-    response = requests.get(url_for('api.get_readings', _external=True, id=id))
-
-    # Check if the request was successful
-    if response.status_code == 200:
-        # Parse the JSON response
-        readings = json.loads(response.text)
-
-        # Get name and surname of the user from json
-        user_name = readings[0][1]
-        user_surname = readings[0][2]
-
-        return render_template("records_for_single_user.html", user_id=id, readings=readings, name=user_name, surname=user_surname)
-    else:
-        return response.text, response.status_code
+    return render_template("records_for_single_user.html", user_id=id)
