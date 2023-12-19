@@ -10,6 +10,8 @@ import sys
 import traceback
 from db import get_db, init_db
 from helpers import add_employee_to_database
+import os
+import shutil
 
 views = Blueprint('views', __name__)
 
@@ -231,6 +233,16 @@ def drop_and_reload_database():
 
             # Recreate tables and reload the schema
             init_db(current_app)
+
+            # Remove png plots in static folder if they exist
+            if os.path.isfile("static/sober_readings_histogram.png"):
+                os.remove("static/sober_readings_histogram.png")
+            if os.path.isfile("static/blocks_number_histogram.png"):
+                os.remove("static/blocks_number_histogram.png")
+
+            # Copy plots from default_plots folder to static folder
+            shutil.copy("default_plots/sober_readings_histogram.png", "static")
+            shutil.copy("default_plots/blocks_number_histogram.png", "static")
 
         flash('Database dropped and reloaded successfully!', 'warning')
     except sqlite3.Error as er:
