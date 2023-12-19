@@ -237,12 +237,11 @@ def drop_and_reload_database():
             # Remove png plots in static folder if they exist
             if os.path.isfile("static/sober_readings_histogram.png"):
                 os.remove("static/sober_readings_histogram.png")
+                shutil.copy("default_plots/sober_readings_histogram.png", "static")
             if os.path.isfile("static/blocks_number_histogram.png"):
                 os.remove("static/blocks_number_histogram.png")
-
-            # Copy plots from default_plots folder to static folder
-            shutil.copy("default_plots/sober_readings_histogram.png", "static")
-            shutil.copy("default_plots/blocks_number_histogram.png", "static")
+                shutil.copy("default_plots/blocks_number_histogram.png", "static")
+            
 
         flash('Database dropped and reloaded successfully!', 'warning')
     except sqlite3.Error as er:
