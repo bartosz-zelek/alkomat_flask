@@ -4,6 +4,8 @@ import sys
 import traceback
 from db import get_db
 from datetime import datetime, timedelta
+import matplotlib
+matplotlib.use('Agg')  # Set Matplotlib backend to Agg
 import matplotlib.pyplot as plt
 
 # This function retrieves readings from the database based on the specified parameters.
