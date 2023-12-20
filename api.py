@@ -43,8 +43,8 @@ def check_rfid(rfid):
 
 
 # Define a route to add a reading to the database
-@api.route("/add_reading/<rfid>/<int:value>/<int:ref_value>", methods=['GET'])
-def add_reading(rfid, value, ref_value):
+@api.route("/add_reading/<rfid>/<int:ref_value>/<int:value>", methods=['GET'])
+def add_reading(rfid, ref_value, value):
     try:
         # Try to insert the reading into the database
         db = get_db()
@@ -65,15 +65,18 @@ def add_reading(rfid, value, ref_value):
             return jsonify({"message": "USER BLOCKED"}), 403
         
         # Insert the reading into the database
+        insert_value = 1-value/ref_value
+        if insert_value < 0:
+            insert_value = 0
         db.execute(
             "INSERT INTO readings (rfid, date_time, value) VALUES (?, ?, ?)",
-            (rfid, datetime.now(), 1-value/ref_value),
+            (rfid, datetime.now(), round(insert_value,2)),
         )
         db.commit()
         
         # Check if user should be blocked
         try:
-            is_drunk = value / ref_value > 0.2 and ref_value - value > 5 and value < 70
+            is_drunk = value / ref_value < 0.8 and ref_value - value > 5 and value < 70
             if is_drunk:
                 check_for_block(rfid)
                 return jsonify({"message": "ENTRY BLOCKED"}), 200
