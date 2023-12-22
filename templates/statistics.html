@@ -5,7 +5,7 @@ Statistics
 {% block content %}
 <p class="fs-1 fw-bold text-center">Statistics</p>
 
-<div class="row">
+<div class="row text-center">
     <div class="col"><canvas id="chart1"></canvas></div>
     <div class="col"><canvas id="chart2"></canvas></div>
 
@@ -20,108 +20,87 @@ Statistics
 <!-- <script src="{{ url_for('static', filename='statistics.js') }}"></script> -->
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- <script src=" https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js "></script> -->\
+
 <script>
     window.onload = function () {
         fetch('/api/get_readings')
             .then(response => {
                 if (response.ok) {
-                    let hashmap1 = new Map();
-                    let hashmap2 = new Map();
-                    response.json().then(data => {
-                        data.forEach(element => {
-                            // if the key exists
-                            let key = element[1] +" "+ element[2];
-                            if (hashmap1.has(key)) {
-                                let value = hashmap1.get(key);
-                                value.push(element[3]);
-                                hashmap1.set(key, value);
-                            } else {
-                                hashmap1.set(key, [element[3]]);
-                            }
-                        });
-                        let labels = [];
-                        let entries = [];
-
-                        let avg = [];
-                        for (let [key, value] of hashmap1) {
-                            labels.push(key);
-                            entries.push(value.length);
-                            avg.push(0);
-                            value.forEach(element => {
-                                avg[avg.length - 1] += element;
-                            });
-                            avg[avg.length - 1] /= value.length;
-                        }
-                        let ctx = document.getElementById('chart1').getContext('2d');
-                        let myChart = new Chart(ctx, {
-                            type: 'bar',
-                            data: {
-                                labels: labels,
-                                datasets: [{
-                                    label: 'Number of Readings',
-                                    data: entries,
-                                    backgroundColor: [
-                                        'rgba(255, 99, 132, 0.2)',
-                                        'rgba(54, 162, 235, 0.2)'
-                                    ],
-                                    borderColor: [
-                                        'rgba(255, 99, 132, 1)',
-                                        'rgba(54, 162, 235, 1)'
-                                    ],
-                                    borderWidth: 1
-                                }]
-                            },
-                            // make it bigger
-                            options: {
-
-                                scales: {
-                                    yAxes: [{
-                                        ticks: {
-                                            beginAtZero: true
-                                        }
-                                    }]
-                                }
-                            }
-                        });
-
-                        let ctx2 = document.getElementById('chart2').getContext('2d');
-                        let myChart2 = new Chart(ctx2, {
-                            type: 'bar',
-                            data: {
-                                labels: labels,
-                                datasets: [{
-                                    label: 'Average Reading',
-                                    data: avg,
-                                    backgroundColor: [
-                                        'rgba(255, 99, 132, 0.2)',
-                                        'rgba(54, 162, 235, 0.2)'
-                                    ],
-                                    borderColor: [
-                                        'rgba(255, 99, 132, 1)',
-                                        'rgba(54, 162, 235, 1)'
-                                    ],
-                                    borderWidth: 1
-                                }]
-                            },
-                            // make it bigger
-                            options: {
-
-                                scales: {
-                                    yAxes: [{
-                                        ticks: {
-                                            beginAtZero: true
-                                        }
-                                    }]
-                                }
-                            }
-                        });
-                    });
-                    // do the bar chart in chart.js
-                    // as labels use the keys of the hashmap
-
+                    return response.json();
                 }
+                throw new Error('Network response was not ok.');
             })
-            .catch(error => console.error(error));
+            .then(data => {
+                let hashmap1 = new Map();
+                let hashmap2 = new Map();
+
+                data.forEach(element => {
+                    let key = element[1] + " " + element[2];
+                    if (hashmap1.has(key)) {
+                        hashmap1.get(key).push(element[3]);
+                    } else {
+                        hashmap1.set(key, [element[3]]);
+                    }
+                });
+
+                let labels = [];
+                let entries = [];
+                let avg = [];
+
+                for (let [key, value] of hashmap1) {
+                    labels.push(key);
+                    entries.push(value.length);
+
+                    let average = value.reduce((acc, val) => acc + val, 0) / value.length;
+                    avg.push(average);
+                }
+
+                let ctx = document.getElementById('chart1').getContext('2d');
+                let myChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Number of Readings',
+                            data: entries,
+                            backgroundColor: [
+                                'rgba(255, 99, 132, 0.2)',
+                                'rgba(54, 162, 235, 0.2)'
+                            ],
+                            borderColor: [
+                                'rgba(255, 99, 132, 1)',
+                                'rgba(54, 162, 235, 1)'
+                            ],
+                            borderWidth: 1
+                        }]
+                    },
+
+                });
+
+                let ctx2 = document.getElementById('chart2').getContext('2d');
+                let myChart2 = new Chart(ctx2, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Average Reading',
+                            data: avg,
+                            backgroundColor: [
+                                'rgba(255, 99, 132, 0.2)',
+                                'rgba(54, 162, 235, 0.2)'
+                            ],
+                            borderColor: [
+                                'rgba(255, 99, 132, 1)',
+                                'rgba(54, 162, 235, 1)'
+                            ],
+                            borderWidth: 1
+                        }]
+                    },
+
+                });
+            })
+            .catch(error => console.error('There was a problem with the fetch operation:', error));
     };
 </script>
 {% endblock %}
