@@ -76,7 +76,7 @@ def add_reading(rfid, ref_value, value):
         
         # Check if user should be blocked
         try:
-            is_drunk = value / ref_value < 0.8 and ref_value - value > 5 and value < 70
+            is_drunk = value / ref_value < 0.8 and ref_value - value > 5
             if is_drunk:
                 check_for_block(rfid)
                 return jsonify({"message": "ENTRY BLOCKED"}), 200
