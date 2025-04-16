@@ -122,21 +122,21 @@ def logout():
 def add_employee():
     #Use add_employee_to_database from api.py
     try:
-        rfid = request.form['rfid']
+        user_id = request.form['user_id']
         name = request.form['name']
         surname = request.form['surname']
 
-        # Check if the employee with the given RFID already exists
+        # Check if the employee with the given user_id already exists
         db = get_db()
-        cur = db.execute("SELECT * FROM USERS WHERE RFID = ?", (rfid,))
+        cur = db.execute("SELECT * FROM USERS WHERE user_id = ?", (user_id,))
         user = cur.fetchone()
         if user:
             # Employee already exists, return error message
             return jsonify({"message": "Employee already exists"}), 400
         
         # Add employee to database
-        add_employee_to_database(rfid, name, surname)
-        flash(f'Employee with rfid {rfid} added successfully!', 'success')
+        add_employee_to_database(user_id, name, surname)
+        flash(f'Employee with user_id {user_id} added successfully!', 'success')
         return redirect('/registered_workers')
     except sqlite3.Error as er:
         # If an SQLite error occurs, return the error information as a response
@@ -151,9 +151,9 @@ def delete_employee(id):
     try:
         # Try to delete the employee from the database
         db = get_db()
-        db.execute("DELETE FROM users WHERE rfid = ?", (id,))
+        db.execute("DELETE FROM users WHERE user_id = ?", (id,))
         db.commit()
-        flash(f'Employee with rfid {id} deleted successfully!', 'danger')
+        flash(f'Employee with user_id {id} deleted successfully!', 'danger')
     except sqlite3.Error as er:
         # If an SQLite error occurs, return the error information as a response
         exc_type, exc_value, exc_tb = sys.exc_info()
@@ -181,11 +181,11 @@ def block_employee(id):
     try:
         # Try to update the worker status in the database
         db = get_db()
-        db.execute("UPDATE users SET blocked = 1 WHERE rfid = ?", (id,))
+        db.execute("UPDATE users SET blocked = 1 WHERE user_id = ?", (id,))
         # Add new block to BLOCKADES table that lasts for a very long time (100 years from curdate)
-        db.execute("INSERT INTO BLOCKADES (RFID, BLOCKADE_TYPE, STATUS) VALUES (?, ?, ?)", (id, "MANUAL", "ONGOING"))
+        db.execute("INSERT INTO BLOCKADES (user_id, BLOCKADE_TYPE, STATUS) VALUES (?, ?, ?)", (id, "MANUAL", "ONGOING"))
         db.commit()
-        flash(f'Employee with rfid {id} blocked successfully!', 'danger')
+        flash(f'Employee with user_id {id} blocked successfully!', 'danger')
     except sqlite3.Error as er:
         # If an SQLite error occurs, return the error information as a response
         exc_type, exc_value, exc_tb = sys.exc_info()
@@ -200,10 +200,10 @@ def unblock_employee(id):
     try:
         # Try to update the worker status in the database
         db = get_db()
-        db.execute("UPDATE users SET blocked = 0 WHERE rfid = ?", (id,))
-        db.execute("UPDATE BLOCKADES SET STATUS = 'DONE' WHERE RFID = ? AND STATUS = 'ONGOING'", (id,))
+        db.execute("UPDATE users SET blocked = 0 WHERE user_id = ?", (id,))
+        db.execute("UPDATE BLOCKADES SET STATUS = 'DONE' WHERE user_id = ? AND STATUS = 'ONGOING'", (id,))
         db.commit()
-        flash(f'Employee with rfid {id} unblocked successfully!', 'success')
+        flash(f'Employee with user_id {id} unblocked successfully!', 'success')
     except sqlite3.Error as er:
         # If an SQLite error occurs, return the error information as a response
         exc_type, exc_value, exc_tb = sys.exc_info()

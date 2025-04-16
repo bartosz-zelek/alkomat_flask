@@ -6,15 +6,15 @@ class ArduinoComs:
 
     def read_and_respond(self):
         print('Reading lines')
-        rfid = input("Input 32bit number in HEX - e.g. 12AB34CD: ")
-        print('Line read - rfid is {}'.format(rfid))
+        user_id = input("Input 32bit number in HEX - e.g. 12AB34CD: ")
+        print('Line read - user_id is {}'.format(user_id))
         ref_val = int(input("Add reference value (int between 70 and 90): "))
         meas_val = int(input("Add measured value (int between 40 and 90): "))
         print('Line read - ref_val is {}, meas_val is {}'.format(ref_val, meas_val))
         # is_drunk = meas_val / ref_val > 0.2 and ref_val - meas_val > 5 and meas_val < 70
-        # 'g' if all good, 'r' if drunk, 'b' if already blocked in DB, 'n' if RFID not recognized
+        # 'g' if all good, 'r' if drunk, 'b' if already blocked in DB, 'n' if user_id not recognized
         # not tested, server not ready to respond just yet
-        response = requests.get('http://localhost:5000/api/add_reading/{}/{}/{}'.format(rfid, ref_val, meas_val))
+        response = requests.get('http://localhost:5000/api/add_reading/{}/{}/{}'.format(user_id, ref_val, meas_val))
         response_msg = response.json()['message']
         print("Response: {}".format(response_msg))
         response_char = ''

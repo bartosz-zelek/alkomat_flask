@@ -70,7 +70,7 @@ void setup() {
 }
 
 void loop() {
-  // check for new RFID card
+  // check for new user_id card
   if ( mfrc522.PICC_IsNewCardPresent()) {
     if ( mfrc522.PICC_ReadCardSerial()) {
       // get ref. val.
@@ -121,7 +121,7 @@ void loop() {
           lcd.print("zablokowany.");
           break;
         case 'n':
-          lcd.print("RFID          ");
+          lcd.print("user_id          ");
           lcd.setCursor(0,1);
           lcd.print("nierozpoznane.");
           break;
