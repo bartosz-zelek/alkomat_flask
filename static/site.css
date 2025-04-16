@@ -1,9 +1,16 @@
+body {
+    background: linear-gradient(0deg, rgba(173, 173, 173, 0.952), rgba(173, 173, 173, 0.952)), url("../static/stylish-hexagonal-line-pattern-background/19742.jpg") repeat;
+    min-height: 100vh;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
 .navbar {
-    background-color: lightslategray;
-    font-size: 1em;
+    background-color: #212529 !important;
+    font-size: 1.1em;
     font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
-    color: white;
+    color: #fff;
     padding: 8px 5px 8px 5px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
 
 .navbar a {
@@ -12,13 +19,65 @@
 }
 
 .navbar-brand {
-    font-size: 1.2em;
-    font-weight: 600;
+    font-size: 1.5em;
+    font-weight: 700;
+    letter-spacing: 1px;
 }
 
 .navbar-item {
     font-variant: small-caps;
     margin-left: 30px;
+}
+
+main.container-fluid {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+}
+
+.table {
+    border-radius: 0.5rem;
+    overflow: hidden;
+    background: #fff;
+}
+
+.table th, .table td {
+    vertical-align: middle;
+}
+
+.btn {
+    min-width: 120px;
+    font-weight: 500;
+}
+
+@media (max-width: 768px) {
+    main.container-fluid {
+        padding: 1rem 0.2rem;
+    }
+    .fs-1, .fs-3 {
+        font-size: 2rem !important;
+    }
+    .table {
+        font-size: 0.95em;
+    }
+    .chart-container {
+        min-height: 200px;
+        height: 50vw;
+        max-height: 300px;
+    }
+}
+
+.chart-container {
+    position: relative;
+    width: 100%;
+    min-height: 300px;
+    height: 40vw;
+    max-height: 500px;
+}
+
+.chart-container canvas {
+    width: 100% !important;
+    height: 100% !important;
 }
 
 .body-content {
