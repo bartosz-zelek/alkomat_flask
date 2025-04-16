@@ -6,9 +6,16 @@ Statistics
 <p class="fs-1 fw-bold text-center">Statistics</p>
 
 <div class="row text-center">
-    <div class="col"><canvas id="chart1"></canvas></div>
-    <div class="col"><canvas id="chart2"></canvas></div>
-
+    <div class="col">
+        <div class="chart-container">
+            <canvas id="chart1"></canvas>
+        </div>
+    </div>
+    <div class="col">
+        <div class="chart-container">
+            <canvas id="chart2"></canvas>
+        </div>
+    </div>
 </div>
 <hr>
 
@@ -21,6 +28,20 @@ Statistics
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <!-- <script src=" https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js "></script> -->
+
+<style>
+.chart-container {
+    position: relative;
+    width: 100%;
+    min-height: 300px;
+    height: 40vw;
+    max-height: 500px;
+}
+.chart-container canvas {
+    width: 100% !important;
+    height: 100% !important;
+}
+</style>
 
 <script>
     window.onload = function () {
@@ -75,7 +96,10 @@ Statistics
                             borderWidth: 1
                         }]
                     },
-
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false
+                    }
                 });
 
                 let ctx2 = document.getElementById('chart2').getContext('2d');
@@ -97,7 +121,10 @@ Statistics
                             borderWidth: 1
                         }]
                     },
-
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false
+                    }
                 });
             })
             .catch(error => console.error('There was a problem with the fetch operation:', error));
