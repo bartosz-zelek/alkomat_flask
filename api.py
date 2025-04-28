@@ -84,7 +84,7 @@ def add_reading(user_id, value):
 
         # Check if user should be blocked
         try:
-            is_drunk = value > 900
+            is_drunk = insert_value > 0.2
             if is_drunk:
                 check_for_block(user_id)
                 return jsonify({"message": "ENTRY BLOCKED"}), 200

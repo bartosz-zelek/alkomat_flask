@@ -43,15 +43,15 @@ class ArduinoComs:
         print("Response: {}".format(response_msg))
         response_char = ""
         if response_msg == "USER DOESN'T EXIST":
-            response_char = "n"
+            response_char = "USER DOESN'T EXIST"
         elif response_msg == "USER BLOCKED":
-            response_char = "b"
+            response_char = "USER BLOCKED"
         elif response_msg == "ENTRY BLOCKED":
-            response_char = "r"
+            response_char = "ENTRY BLOCKED"
         elif response_msg == "ACCEPTED":
-            response_char = "g"
+            response_char = "ACCEPTED"
         else:
-            response_char = "n"
+            response_char = "UNKNOWN"
         print("Writing to Arduino: {}".format(response_char))
         self.arduino.write(bytes(response_char, "ascii"))
         print("Info sent to Arduino")
@@ -144,8 +144,10 @@ if __name__ == "__main__":
         help="number of times to jitter the image for encoding",
     )
     fr = FaceRecognition(parser.parse_args())
-    name = "Unknown"
-    name = fr.recognize_face_and_return_name()
-    print("Recognized name: {}".format(name))
     arduino = ArduinoComs("/dev/ttyUSB0")
-    arduino.read_and_respond(name)
+    
+    while True:
+        name = "Unknown"
+        name = fr.recognize_face_and_return_name()
+        print("Recognized name: {}".format(name))
+        arduino.read_and_respond(name)

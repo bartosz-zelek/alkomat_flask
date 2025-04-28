@@ -129,6 +129,7 @@ void loop()
     String resp = Serial.readString();
     lcd.setCursor(0, 0);
     lcd.print("Response: ");
+    lcd.setCursor(0, 1);
     lcd.print(resp);
     delay(2000);
     lcd.clear();
