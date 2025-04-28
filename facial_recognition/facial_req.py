@@ -113,63 +113,6 @@ class FaceRecognition:
                 print("Unknown face detected, retrying...")
         return name
 
-
-# cam.start()
-# time.sleep(2.0)
-
-# fps = FPS().start()
-
-# frame_queue = queue.Queue(maxsize=1)
-# result_lock = threading.Lock()
-# current_boxes = []
-# current_names = []
-# stop_event = threading.Event()
-
-
-# threading.Thread(target=detection_loop, daemon=True).start()
-
-# while True:
-#     frame_count += 1
-#     rgb_frame = cam.capture_array()
-#     frame = cv2.cvtColor(rgb_frame, cv2.COLOR_RGB2BGR)
-#     if frame is None:
-#         print("[ERROR] Failed to grab frame, retrying...")
-#         continue
-#     frame = imutils.resize(frame, width=args.width)
-#     rgb_frame = imutils.resize(rgb_frame, width=args.width)
-#     small_rgb = cv2.resize(rgb_frame, (0, 0), fx=args.downscale, fy=args.downscale)
-
-#     if frame_count % skip_frames == 0:
-#         try:
-#             frame_queue.put_nowait(small_rgb)
-#         except queue.Full:
-#             pass
-
-#     with result_lock:
-#         boxes = list(current_boxes)
-#         names = list(current_names)
-
-#     for (top, right, bottom, left), name in zip(boxes, names):
-#         y = top - 15 if top - 15 > 15 else top + 15
-#         cv2.putText(
-#             frame, name, (left, y), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 255), 2
-#         )
-
-#     cv2.imshow("Facial Recognition is Running", frame)
-#     key = cv2.waitKey(1) & 0xFF
-
-#     if key == ord("q"):
-#         break
-
-#     fps.update()
-
-# fps.stop()
-# print("[INFO] elasped time: {:.2f}".format(fps.elapsed()))
-# print("[INFO] approx. FPS: {:.2f}".format(fps.fps()))
-
-# cv2.destroyAllWindows()
-# stop_event.set()
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -204,3 +147,5 @@ if __name__ == "__main__":
     name = "Unknown"
     name = fr.recognize_face_and_return_name()
     print("Recognized name: {}".format(name))
+    arduino = ArduinoComs("/dev/ttyUSB0")
+    arduino.read_and_respond(name)
