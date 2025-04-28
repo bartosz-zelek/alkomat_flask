@@ -53,12 +53,13 @@ class ArduinoComs:
             response_char = "ENTRY BLOCKED"
         elif response_msg == "ACCEPTED":
             response_char = "ACCEPTED"
+        elif response_msg == "CONNECTION ERROR":
+            response_char = "CONNECTION ERROR"
         else:
             response_char = "UNKNOWN"
         print("Writing to Arduino: {}".format(response_char))
         self.arduino.write(bytes(response_char, "ascii"))
         print("Info sent to Arduino")
-        sleep(5)  # wait for Arduino to process the response
 
 
 class FaceRecognition:
@@ -84,7 +85,6 @@ class FaceRecognition:
     def recognize_face_and_return_name(self):
         print("Starting face recognition")
         self.cam.start()
-        time.sleep(2.0)  # Allow camera to warm up
         # Repeat until a known face is detected
         name = "Unknown"
         while name == "Unknown":

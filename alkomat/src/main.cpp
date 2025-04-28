@@ -92,7 +92,7 @@ void loop()
       lcd.setCursor(0, 1);
 
       // Detect blow: threshold can be tuned
-      if (adc > baseline + 50)
+      if (adc > baseline + 25 || adc < baseline - 25)
       {
         blowDetected = true;
         lcd.clear();
