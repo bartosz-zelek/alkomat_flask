@@ -35,11 +35,14 @@ class ArduinoComs:
         # TODO: maybe rewrite using ?user_id=user_id etc. if possible
         # 'g' if all good, 'r' if drunk, 'b' if already blocked in DB, 'n' if user_id not recognized
         # not tested, server not ready to respond just yet
-        response = requests.get(
-            "http://localhost:5000/api/add_reading/{}/{}".format(
-                user_id, meas_val)
-        )
-        response_msg = response.json()["message"]
+        try:
+            response = requests.get(
+                "http://localhost:5000/api/add_reading/{}/{}".format(
+                    user_id, meas_val)
+            )
+            response_msg = response.json()["message"]
+        except requests.exceptions.RequestException as e:
+            response_msg = "CONNECTION ERROR"
         print("Response: {}".format(response_msg))
         response_char = ""
         if response_msg == "USER DOESN'T EXIST":
