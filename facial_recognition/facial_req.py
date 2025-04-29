@@ -70,7 +70,6 @@ class FaceRecognition:
             os.path.join(os.path.dirname(__file__),
                          "haarcascade_frontalface_default.xml")
         )
-        self.ard = ArduinoComs("/dev/ttyUSB0")
         self.MultiTracker = cv2.legacy.MultiTracker_create
         self.Tracker = cv2.legacy.TrackerKCF_create
 

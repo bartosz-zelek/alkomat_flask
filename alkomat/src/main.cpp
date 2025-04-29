@@ -1,15 +1,44 @@
 #include <Arduino.h>
 #include <MQUnifiedsensor.h>
 #include <LiquidCrystal_I2C.h>
+#include <Servo.h>
 
 #define RatioMQ3CleanAir (60)
+#define BUZZER_PIN 12 // Pin for the speaker/buzzer
+#define SERVO_PIN A2  // Pin for the servo motor
 
 MQUnifiedsensor MQ3("Arduino", 5.0F, 10, A0, "MQ-3");
 LiquidCrystal_I2C lcd(0x27, 16, 2);
+Servo servo;
+int servoPos = 0; // Variable to store the servo position
 
 void setup()
 {
   Serial.begin(9600);
+
+  {
+    pinMode(SERVO_PIN, OUTPUT);
+    pinMode(BUZZER_PIN, OUTPUT);
+    digitalWrite(BUZZER_PIN, LOW); // Turn off the buzzer initially
+  }
+
+  {
+    servo.attach(SERVO_PIN);
+    servo.write(servoPos); // Set initial position to 0 degrees
+    // Calibrate servo: sweep from 0° to 180° and back
+    for (int angle = 0; angle <= 180; angle++)
+    {
+      servo.write(angle);
+      delay(10);
+    }
+    for (int angle = 180; angle >= 0; angle--)
+    {
+      servo.write(angle);
+      delay(10);
+    }
+    servo.write(servoPos); // Return to initial position
+    servo.detach();        // Detach to stop pulses after calibration
+  }
 
   {
     // Initialize the LCD
@@ -114,7 +143,7 @@ void loop()
           lcd.print("ADC: ");
           lcd.print(adc);
           lcd.print("    "); // Clear any leftover chars
-          delay(100);
+          delay(50);
         }
         lcd.clear();
         lcd.setCursor(0, 0);
@@ -131,6 +160,34 @@ void loop()
     lcd.print("Response: ");
     lcd.setCursor(0, 1);
     lcd.print(resp);
+    if (resp == "ACCEPTED")
+    {
+      servo.attach(SERVO_PIN); // Re-attach before moving
+      servoPos = 90;           // Move servo by 90 degrees
+      servo.write(servoPos);   // Move the servo to the new position
+      digitalWrite(LED_BUILTIN, HIGH);
+      delay(5000);                    // Wait for 5 seconds
+      digitalWrite(LED_BUILTIN, LOW); // Turn off the built-in LED
+      servoPos = 0;                   // Move servo back to original (0°) position
+      servo.write(servoPos);          // Move the servo to the new position
+      delay(500);                     // Wait for servo to reach original position before detaching
+      servo.detach();                 // Detach after movement to prevent ticking
+    }
+    else
+    {
+      // make sound
+      // blink with builtin led
+      for (int i = 0; i < 5; i++)
+      {
+        digitalWrite(LED_BUILTIN, HIGH); // Turn on the built-in LED
+        digitalWrite(BUZZER_PIN, HIGH);  // Turn on the buzzer
+        delay(500);                      // Wait for 0.5 seconds
+        digitalWrite(LED_BUILTIN, LOW);  // Turn off the built-in LED
+        digitalWrite(BUZZER_PIN, LOW);   // Turn off the buzzer
+        delay(500);                      // Wait for 0.5 seconds
+      }
+      digitalWrite(BUZZER_PIN, LOW); // Turn off the buzzer
+    }
     delay(2000);
     lcd.clear();
   }
