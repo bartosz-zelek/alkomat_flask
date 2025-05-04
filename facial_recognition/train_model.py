@@ -22,11 +22,12 @@ knownNamesBeforeTraining = []
 knownNames = []
 knownEncodings = []
 
+everyNameInDirectory = set()
+
 if os.path.exists(encodingsPath):
     print("[INFO] loading existing encodings...")
     with open(encodingsPath, "rb") as f:
         data = pickle.load(f)
-        print(data)
     knownEncodingsBeforeTraining = data["encodings"]
     knownNamesBeforeTraining = data["names"]
 
@@ -37,6 +38,7 @@ print(knownNamesBeforeTraining)
 for i, imagePath in enumerate(imagePaths):
     # extract the person name from the image path
     name = imagePath.split(os.path.sep)[-2]
+    everyNameInDirectory.add(name)
 
     if name in knownNamesBeforeTraining:
         print(f"[INFO] skipping {name} as it already exists in encodings")
@@ -61,8 +63,10 @@ for i, imagePath in enumerate(imagePaths):
         knownNames.append(name)
 
 for i, name in enumerate(knownNamesBeforeTraining):
-    knownEncodings.append(knownEncodingsBeforeTraining[i])
-    knownNames.append(name)
+    if name in everyNameInDirectory:
+        knownEncodings.append(knownEncodingsBeforeTraining[i])
+        knownNames.append(name)
+
 
 print(knownNames)
 

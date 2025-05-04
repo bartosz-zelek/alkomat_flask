@@ -1,3 +1,5 @@
+import atexit
+
 from apscheduler.schedulers.background import BackgroundScheduler
 from flask import Flask, g
 from flask_login import LoginManager
@@ -27,6 +29,8 @@ def create_app():
     scheduler = BackgroundScheduler()
     scheduler.add_job(func=check_blockades, trigger="interval", seconds=60, args=[app])
     scheduler.start()
+    # ensure scheduler is cleanly shut down when the Flask process exits
+    atexit.register(scheduler.shutdown)
 
     kill_facial_recognition_process()
     run_facial_recognition_process()
