@@ -1,15 +1,20 @@
+from apscheduler.schedulers.background import BackgroundScheduler
 from flask import Flask, g
 from flask_login import LoginManager
+
+from api import api
 from boss import Boss
 from db import get_db, init_db
-from api import api
+from helpers import (
+    check_blockades,
+    kill_facial_recognition_process,
+    run_facial_recognition_process,
+)
 from views import views
-from apscheduler.schedulers.background import BackgroundScheduler
-from helpers import check_blockades
-
 
 # Define the path to the SQLite database file
 DATABASE = "database.db"
+
 
 # Create a Flask application instance
 def create_app():
@@ -23,11 +28,15 @@ def create_app():
     scheduler.add_job(func=check_blockades, trigger="interval", seconds=60, args=[app])
     scheduler.start()
 
+    kill_facial_recognition_process()
+    run_facial_recognition_process()
+
     return app
 
 
 app = create_app()
 login_manager = LoginManager(app)
+
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -38,6 +47,7 @@ def load_user(user_id):
         return Boss(id=user_id, name=boss_data[0])
     return None
 
+
 # Function to close the database connection when the app context is torn down
 @app.teardown_appcontext
 def close_connection(exception):
@@ -46,10 +56,8 @@ def close_connection(exception):
         db.close()
 
 
-
 # Run the Flask app if the script is executed directly
 if __name__ == "__main__":
     with app.app_context():
         init_db(app)
     app.run(debug=True, host="0.0.0.0")
-

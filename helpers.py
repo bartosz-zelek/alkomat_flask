@@ -1,32 +1,71 @@
-from flask import jsonify
+import os
 import sqlite3
 import sys
+import threading
 import traceback
-from db import get_db
 from datetime import datetime, timedelta
+
 import matplotlib
-matplotlib.use('Agg')  # Set Matplotlib backend to Agg
+from flask import jsonify
+
+from db import get_db
+
+matplotlib.use("Agg")  # Set Matplotlib backend to Agg
 import matplotlib.pyplot as plt
+
 
 # This function retrieves readings from the database based on the specified parameters.
 # If 'id' is provided, it fetches readings for a specific user; otherwise, it retrieves readings for all users.
 def get_readings_internal(count, offset, id=None):
     # Connect to the database
     db = get_db()
-    
+
     # Formulate the SQL query based on the presence of 'id'
     if id:
         cur = db.execute(
-            "SELECT date_time, name, surname, value FROM users INNER JOIN readings ON users.user_id = readings.user_id WHERE users.user_id = ? ORDER BY readings.date_time DESC LIMIT ? OFFSET ?", (id, count, offset)
+            "SELECT date_time, name, surname, value FROM users INNER JOIN readings ON users.user_id = readings.user_id WHERE users.user_id = ? ORDER BY readings.date_time DESC LIMIT ? OFFSET ?",
+            (id, count, offset),
         )
     else:
         cur = db.execute(
-            "SELECT date_time, name, surname, value FROM users INNER JOIN readings ON users.user_id = readings.user_id ORDER BY readings.date_time DESC LIMIT ? OFFSET ?", (count, offset)
+            "SELECT date_time, name, surname, value FROM users INNER JOIN readings ON users.user_id = readings.user_id ORDER BY readings.date_time DESC LIMIT ? OFFSET ?",
+            (count, offset),
         )
-    
+
     # Fetch the readings and return the result
     list_of_readings = cur.fetchall()
     return list_of_readings
+
+
+def kill_facial_recognition_process():
+    # Kill the process running facial_req.py
+    ret = os.system("pkill -f 'facial_req.py'")
+    if ret == 0:
+        print("Process killed successfully")
+    else:
+        print("No process found")
+
+
+def run_facial_recognition_process():
+    threading.Thread(
+        target=lambda: os.system(
+            "/home/bartox7777/alkomat_flask/venv/bin/python /home/bartox7777/alkomat_flask/facial_recognition/facial_req.py",
+        ),
+    ).start()
+
+
+def take_face_photos(name, number_of_photos=20):
+    os.system(
+        f"/home/bartox7777/alkomat_flask/venv/bin/python /home/bartox7777/alkomat_flask/facial_recognition/headshots_picam.py {name} {number_of_photos}"
+    )
+
+
+def run_training():
+    threading.Thread(
+        target=lambda: os.system(
+            "/home/bartox7777/alkomat_flask/venv/bin/python /home/bartox7777/alkomat_flask/facial_recognition/train_model.py",
+        ),
+    ).start()
 
 
 # This function adds an employee to the database with the provided user_id, name, and surname.
@@ -40,7 +79,12 @@ def add_employee_to_database(user_id, name, surname):
             (user_id, name, surname),
         )
         db.commit()
-        
+
+        kill_facial_recognition_process()
+        take_face_photos(name)
+        run_facial_recognition_process()
+        run_training()
+
         # Return dict with employee data
         res = {"id": user_id, "name": name, "surname": surname, "blocked": 0}
         return res
@@ -48,6 +92,9 @@ def add_employee_to_database(user_id, name, surname):
         # If an SQLite error occurs, return the error information as a response
         exc_type, exc_value, exc_tb = sys.exc_info()
         return traceback.format_exception(exc_type, exc_value, exc_tb)[-1], 500
+    except Exception as e:
+        # If a general error occurs, return the error message
+        return str(e), 500
 
 
 # This function checks if a user should be blocked based on recent readings.
@@ -56,27 +103,17 @@ def check_for_block(user_id, block_time=10):
     try:
         # Get the last 3 readings from the database for the specified user_id
         db = get_db()
-        # cur = db.execute("SELECT strftime('%Y-%m-%d %H:%M:%S', DATE_TIME), VALUE FROM READINGS WHERE user_id = ? ORDER BY DATE_TIME DESC LIMIT 3", (user_id,))
-        # readings = cur.fetchall()
-
-        # # Check if all of these readings were done in the last 'timeframe_for_measurements' minutes
-        # date_format = "%Y-%m-%d %H:%M:%S"
-        # if len(readings) < 3:
-        #     # There are not enough readings, return
-        #     return
-        # for reading in readings:
-        #     reading = list(reading)
-        #     reading[0] = datetime.strptime(reading[0], date_format)
-        #     if reading[0] < datetime.now() - timedelta(minutes=timeframe_for_measurements):
-        #         # One of the readings was too old, return
-        #         return
-        #     if reading[1] < drunk_threshold:
-        #         # One of the readings was below drunk_threshold, return
-        #         return
-            
-        # If the loop ends, the employee is drunk, block him for 'block_time' minutes
         db.execute("UPDATE USERS SET BLOCKED = 1 WHERE user_id = ?", (user_id,))
-        db.execute("INSERT INTO BLOCKADES (user_id, START_DATE, END_DATE, BLOCKADE_TYPE, STATUS) VALUES (?, ?, ?, ?, ?)", (user_id, datetime.now(), datetime.now() + timedelta(minutes=block_time), "AUTOMATIC", "ONGOING"))
+        db.execute(
+            "INSERT INTO BLOCKADES (user_id, START_DATE, END_DATE, BLOCKADE_TYPE, STATUS) VALUES (?, ?, ?, ?, ?)",
+            (
+                user_id,
+                datetime.now(),
+                datetime.now() + timedelta(minutes=block_time),
+                "AUTOMATIC",
+                "ONGOING",
+            ),
+        )
         db.commit()
         return 1
     except Exception as e:
@@ -88,14 +125,26 @@ def check_for_block(user_id, block_time=10):
 def get_sober_readings_data(drunk_threshold):
     try:
         db = get_db()
-        cur = db.execute("SELECT R.user_id, U.NAME, U.SURNAME, COUNT(*), (SELECT COUNT(*) FROM READINGS WHERE user_id = R.user_id) FROM READINGS R INNER JOIN USERS U ON R.user_id = U.user_id WHERE VALUE < ? GROUP BY R.user_id", (drunk_threshold,))
+        cur = db.execute(
+            "SELECT R.user_id, U.NAME, U.SURNAME, COUNT(*), (SELECT COUNT(*) FROM READINGS WHERE user_id = R.user_id) FROM READINGS R INNER JOIN USERS U ON R.user_id = U.user_id WHERE VALUE < ? GROUP BY R.user_id",
+            (drunk_threshold,),
+        )
         histogram_data = cur.fetchall()
 
         if not histogram_data:
             return "No records found.", datetime.now()
 
         # Turn data into dict
-        histogram_data = [{"id": row[0], "name": row[1], "surname": row[2], "sober_readings": row[3], "total_readings": row[4]} for row in histogram_data]
+        histogram_data = [
+            {
+                "id": row[0],
+                "name": row[1],
+                "surname": row[2],
+                "sober_readings": row[3],
+                "total_readings": row[4],
+            }
+            for row in histogram_data
+        ]
 
         # Add timestamp of when the data was fetched
         return histogram_data, datetime.now()
@@ -111,16 +160,25 @@ def get_sober_readings_histogram(histogram_data, timestamp, drunk_threshold=0.2)
         ids = [histogram_data[i]["id"] for i in range(len(histogram_data))]
         names = [histogram_data[i]["name"] for i in range(len(histogram_data))]
         surnames = [histogram_data[i]["surname"] for i in range(len(histogram_data))]
-        sober_readings = [histogram_data[i]["sober_readings"] for i in range(len(histogram_data))]
-        total_readings = [histogram_data[i]["total_readings"] for i in range(len(histogram_data))]
-        sober_percentages = [sober_readings[i] / total_readings[i] * 100 for i in range(len(histogram_data))]
-        
+        sober_readings = [
+            histogram_data[i]["sober_readings"] for i in range(len(histogram_data))
+        ]
+        total_readings = [
+            histogram_data[i]["total_readings"] for i in range(len(histogram_data))
+        ]
+        sober_percentages = [
+            sober_readings[i] / total_readings[i] * 100
+            for i in range(len(histogram_data))
+        ]
+
         # Create a matplotlib histogram
         plt.bar(ids, sober_percentages)
         plt.xticks(ids, [f"{name} {surname}" for name, surname in zip(names, surnames)])
         plt.xlabel("Employee")
         plt.ylabel("Percentage of sober readings")
-        plt.title(f"Percentage of sober readings for each employee on {timestamp.strftime('%d.%m.%Y at %H:%M')}\nFor drunk threshold of {drunk_threshold}")
+        plt.title(
+            f"Percentage of sober readings for each employee on {timestamp.strftime('%d.%m.%Y at %H:%M')}\nFor drunk threshold of {drunk_threshold}"
+        )
         plt.savefig("static/sober_readings_histogram.png")
         plt.close()
     except Exception as e:
@@ -132,14 +190,19 @@ def get_sober_readings_histogram(histogram_data, timestamp, drunk_threshold=0.2)
 def get_blocks_number_data():
     try:
         db = get_db()
-        cur = db.execute("SELECT B.user_id, U.NAME, U.SURNAME, COUNT(*) FROM BLOCKADES B INNER JOIN USERS U ON B.user_id = U.user_id GROUP BY B.user_id")
+        cur = db.execute(
+            "SELECT B.user_id, U.NAME, U.SURNAME, COUNT(*) FROM BLOCKADES B INNER JOIN USERS U ON B.user_id = U.user_id GROUP BY B.user_id"
+        )
         histogram_data = cur.fetchall()
 
         if not histogram_data:
             return "No records found."
 
         # Turn data into dict
-        histogram_data = [{"id": row[0], "name": row[1], "surname": row[2], "blocks_number": row[3]} for row in histogram_data]
+        histogram_data = [
+            {"id": row[0], "name": row[1], "surname": row[2], "blocks_number": row[3]}
+            for row in histogram_data
+        ]
 
         return histogram_data
     except Exception as e:
@@ -173,16 +236,27 @@ def check_blockades(app):
         with app.app_context():
             db = get_db()
             # Get all blockades that are automatic and have ended yet and that started after last usage of this function (set in a parameter)
-            cur = db.execute(F"SELECT user_id, strftime('%Y-%m-%d %H:%M:%S', END_DATE) FROM BLOCKADES WHERE BLOCKADE_TYPE = ? AND END_DATE < ? AND STATUS = 'ONGOING'", ("AUTOMATIC", datetime.now()))
+            cur = db.execute(
+                f"SELECT user_id, strftime('%Y-%m-%d %H:%M:%S', END_DATE) FROM BLOCKADES WHERE BLOCKADE_TYPE = ? AND END_DATE < ? AND STATUS = 'ONGOING'",
+                ("AUTOMATIC", datetime.now()),
+            )
             blockades = cur.fetchall()
 
             for blockade in blockades:
                 blockade = list(blockade)
                 # Check if blockade has ended
-                if datetime.strptime(blockade[1], f"%Y-%m-%d %H:%M:%S") < datetime.now():
+                if (
+                    datetime.strptime(blockade[1], f"%Y-%m-%d %H:%M:%S")
+                    < datetime.now()
+                ):
                     # Blockade has ended, update the BLOCKED status of the user to 0
-                    db.execute("UPDATE USERS SET BLOCKED = 0 WHERE user_id = ?", (blockade[0],))
-                    db.execute("UPDATE BLOCKADES SET STATUS = 'DONE' WHERE user_id = ? AND STATUS = 'ONGOING' AND BLOCKADE_TYPE = 'AUTOMATIC'", (blockade[0],))
+                    db.execute(
+                        "UPDATE USERS SET BLOCKED = 0 WHERE user_id = ?", (blockade[0],)
+                    )
+                    db.execute(
+                        "UPDATE BLOCKADES SET STATUS = 'DONE' WHERE user_id = ? AND STATUS = 'ONGOING' AND BLOCKADE_TYPE = 'AUTOMATIC'",
+                        (blockade[0],),
+                    )
                     db.commit()
 
             return jsonify({"message": "Blockades checked"}), 200

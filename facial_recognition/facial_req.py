@@ -1,21 +1,19 @@
 #! /usr/bin/python
 
 # import the necessary packages
-from imutils.video import FPS
-from picamera2 import Picamera2
-
-import face_recognition
-import pickle
-import time
 import argparse
-import cv2
 import os
-import threading
+import pickle
 import queue
-
-import serial
-import requests
+import threading
+import time
 from time import sleep
+
+import cv2
+import face_recognition
+import requests
+import serial
+from picamera2 import Picamera2
 
 
 class ArduinoComs:
@@ -31,14 +29,9 @@ class ArduinoComs:
         print("Line read - user_id is {}".format(user_id))
         meas_val = int(self.arduino.readline())
         print("Line read - meas_val is {}".format(meas_val))
-        # is_drunk = meas_val / ref_val > 0.2 and ref_val - meas_val > 5 and meas_val < 70
-        # TODO: maybe rewrite using ?user_id=user_id etc. if possible
-        # 'g' if all good, 'r' if drunk, 'b' if already blocked in DB, 'n' if user_id not recognized
-        # not tested, server not ready to respond just yet
         try:
             response = requests.get(
-                "http://localhost:5000/api/add_reading/{}/{}".format(
-                    user_id, meas_val)
+                "http://localhost:5000/api/add_reading/{}/{}".format(user_id, meas_val)
             )
             response_msg = response.json()["message"]
         except requests.exceptions.RequestException as e:
@@ -64,11 +57,29 @@ class ArduinoComs:
 
 class FaceRecognition:
     def __init__(self, args):
-        encodingsP = "encodings.pickle"
-        self.data = pickle.loads(open(encodingsP, "rb").read())
+        # path to the encodings file and dynamic reload on change
+        self.encodingsP = "/home/bartox7777/alkomat_flask/encodings.pickle"
+        self.data = {}
+        self._encodings_mtime = None
+
+        def _reload_encodings():
+            try:
+                mtime = os.path.getmtime(self.encodingsP)
+                if self._encodings_mtime != mtime:
+                    with open(self.encodingsP, "rb") as f:
+                        self.data = pickle.load(f)
+                        self._encodings_mtime = mtime
+                    print("Encodings reloaded:", self._encodings_mtime)
+            except Exception as e:
+                print("Failed to reload encodings:", e)
+
+        self._reload_encodings = _reload_encodings
+        # initial load
+        self._reload_encodings()
         self.cascade = cv2.CascadeClassifier(
-            os.path.join(os.path.dirname(__file__),
-                         "haarcascade_frontalface_default.xml")
+            os.path.join(
+                os.path.dirname(__file__), "haarcascade_frontalface_default.xml"
+            )
         )
         self.MultiTracker = cv2.legacy.MultiTracker_create
         self.Tracker = cv2.legacy.TrackerKCF_create
@@ -87,13 +98,16 @@ class FaceRecognition:
         # Repeat until a known face is detected
         name = "Unknown"
         while name == "Unknown":
+            self._reload_encodings()
             # Capture frame and prepare for detection
             frame = self.cam.capture_array()
             rgb = frame
 
             # Detect face locations and compute encodings
             boxes = face_recognition.face_locations(rgb, model=self.args.model)
-            encodings = face_recognition.face_encodings(rgb, boxes, num_jitters=self.args.jitter)
+            encodings = face_recognition.face_encodings(
+                rgb, boxes, num_jitters=self.args.jitter
+            )
 
             if not encodings:
                 print("No faces detected, retrying...")
@@ -114,6 +128,7 @@ class FaceRecognition:
             else:
                 print("Unknown face detected, retrying...")
         return name
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -147,7 +162,7 @@ if __name__ == "__main__":
     )
     fr = FaceRecognition(parser.parse_args())
     arduino = ArduinoComs("/dev/ttyUSB0")
-    
+
     while True:
         name = "Unknown"
         name = fr.recognize_face_and_return_name()
