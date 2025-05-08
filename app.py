@@ -32,8 +32,8 @@ def create_app():
     # ensure scheduler is cleanly shut down when the Flask process exits
     atexit.register(scheduler.shutdown)
 
-    kill_facial_recognition_process()
-    run_facial_recognition_process()
+    # kill_facial_recognition_process()
+    # run_facial_recognition_process()
 
     return app
 
