@@ -2,6 +2,7 @@
 #include <MQUnifiedsensor.h>
 #include <LiquidCrystal_I2C.h>
 #include <Servo.h>
+#include <UUID.h>
 
 #define RatioMQ3CleanAir (60)
 #define BUZZER_PIN 12 // Pin for the speaker/buzzer
@@ -11,10 +12,28 @@ MQUnifiedsensor MQ3("Arduino", 5.0F, 10, A0, "MQ-3");
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 Servo servo;
 int servoPos = 0; // Variable to store the servo position
+int adc;
+String brethalyzerId;
+UUID uuid;
+
 
 void setup()
 {
   Serial.begin(9600);
+
+  // insert brethalyzer id
+  {
+    while (!Serial)
+      ;                      // wait for USB-serial to come up
+    Serial.setTimeout(5000); // wait up to 5s for the user to type
+    brethalyzerId = Serial.readStringUntil('\n');
+    brethalyzerId.trim(); // drop CR/LF
+    // flush any extra bytes so loop() gets only new data
+    while (Serial.available())
+    {
+      Serial.read();
+    }
+  }
 
   {
     pinMode(SERVO_PIN, OUTPUT);
@@ -87,7 +106,12 @@ void loop()
 {
   lcd.setCursor(0, 0);
   lcd.print("Recognizing face");
-  int adc;
+
+  delay(20000); // Simulate face recognition delay
+
+  uuid.generate();
+  String uuidStr = uuid.toCharArray();
+  Serial.println(uuidStr); 
 
   // read from serial
   if (Serial.available())
