@@ -59,7 +59,7 @@ if __name__ == "__main__":
         uuid = client.read_uuid()
         print(f"UUID: {uuid}")
         # send response to server
-        response = requests.get(f"http://{ip}/add_reading/uuid/{uuid}")
+        response = requests.get(f"http://{ip}/api/uuid/{uuid}")
         print(f"Server response: {response} {response.content}")
     finally:
         client.close()
