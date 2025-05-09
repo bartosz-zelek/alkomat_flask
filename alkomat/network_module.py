@@ -3,6 +3,8 @@ import time
 import requests
 import serial
 
+from helpers import ip
+
 
 class ArduinoSerialClient:
     def __init__(self, port: str, baudrate: int = 9600, timeout: float = 1.0):
@@ -50,7 +52,6 @@ class ArduinoSerialClient:
 
 
 if __name__ == "__main__":
-    ip = "150.254.45.26:5000"
     client = ArduinoSerialClient(port="COM9")
     try:
         breathalyzer_id = input("Enter Brethalyzer ID: ")

@@ -2,18 +2,18 @@
 
 # import the necessary packages
 import argparse
+import base64
+import json
 import os
 import pickle
-import queue
-import threading
-import time
-from time import sleep
 
 import cv2
 import face_recognition
 import requests
 import serial
 from picamera2 import Picamera2
+
+ip = "150.254.45.26:5000"
 
 
 class ArduinoComs:
@@ -127,11 +127,14 @@ class FaceRecognition:
                 name = max(counts, key=counts.get)
             else:
                 print("Unknown face detected, retrying...")
-        return name
+        return name, frame
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-u", "--uuid", type=str, help="UUID of the user", required=True
+    )
     parser.add_argument(
         "-w", "--width", type=int, default=640, help="width of the frame"
     )
@@ -161,10 +164,21 @@ if __name__ == "__main__":
         help="number of times to jitter the image for encoding",
     )
     fr = FaceRecognition(parser.parse_args())
-    arduino = ArduinoComs("/dev/ttyUSB0")
 
     while True:
         name = "Unknown"
-        name = fr.recognize_face_and_return_name()
+        name, picture = fr.recognize_face_and_return_name()
+        uuid = fr.args.uuid
+        # encode frame to JPEG and base64 so Flask can parse JSON
+        _, img_buf = cv2.imencode(".jpg", picture)
+        img_b64 = base64.b64encode(img_buf).decode("ascii")
+        payload = {"photo": img_b64, "user_id": name}
+        headers = {"Content-Type": "application/json"}
+        response = requests.post(
+            f"http://{ip}/api/uuid/{uuid}", data=json.dumps(payload), headers=headers
+        )
+        if response.status_code == 200:
+            print("UUID sent successfully")
+        else:
+            print(f"Failed to send UUID: {response.status_code} {response.text}")
         print("Recognized name: {}".format(name))
-        arduino.read_and_respond(name)

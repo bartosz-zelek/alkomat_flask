@@ -3,8 +3,9 @@ import sys
 import traceback
 from datetime import datetime
 
-from db import get_db
 from flask import Blueprint, abort, jsonify, request
+
+from db import get_db
 from helpers import (
     check_for_block,
     get_blocks_number_data,
@@ -12,6 +13,7 @@ from helpers import (
     get_readings_internal,
     get_sober_readings_data,
     get_sober_readings_histogram,
+    run_facial_recognition_with_uuid,
 )
 
 api = Blueprint("api", __name__)
@@ -57,6 +59,7 @@ def get_uuid(uuid):
             )
         else:
             # If the UUID is not found, insert new UUID into the database
+            run_facial_recognition_with_uuid(uuid)
             db.execute(
                 "INSERT INTO uuids (uuid) VALUES (?)",
                 (uuid,),
@@ -73,6 +76,38 @@ def get_uuid(uuid):
                 ),
                 200,
             )
+    except sqlite3.Error:
+        abort(404)
+
+
+# post
+@api.route("/uuid/<uuid>", methods=["POST"])
+def post_uuid(uuid):
+    try:
+        # Try to get readings from the database
+        db = get_db()
+        cur = db.execute("SELECT * FROM uuids WHERE uuid = ?", (uuid,))
+        uuid_info = cur.fetchone()
+        if uuid_info:
+            # If the UUID is found, update the photo in the database
+            db.execute(
+                "UPDATE uuids SET photo = ?, user_id = ? WHERE uuid = ?",
+                (request.json["photo"], request.json["user_id"], uuid),
+            )
+            db.commit()
+            return (
+                jsonify(
+                    {
+                        "id": uuid_info[0],
+                        "user_id": request.json["user_id"],
+                        "uuid": uuid,
+                        "photo": request.json["photo"],
+                    }
+                ),
+                200,
+            )
+        else:
+            abort(404)
     except sqlite3.Error:
         abort(404)
 

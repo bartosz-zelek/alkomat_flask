@@ -13,6 +13,8 @@ from db import get_db
 matplotlib.use("Agg")  # Set Matplotlib backend to Agg
 import matplotlib.pyplot as plt
 
+ip = "150.254.45.26:5000"
+
 
 # This function retrieves readings from the database based on the specified parameters.
 # If 'id' is provided, it fetches readings for a specific user; otherwise, it retrieves readings for all users.
@@ -50,6 +52,14 @@ def run_facial_recognition_process():
     threading.Thread(
         target=lambda: os.system(
             "/home/bartox7777/alkomat_flask/venv/bin/python /home/bartox7777/alkomat_flask/facial_recognition/facial_req.py",
+        ),
+    ).start()
+
+
+def run_facial_recognition_with_uuid(uuid):
+    threading.Thread(
+        target=lambda: os.system(
+            f"/home/bartox7777/alkomat_flask/venv/bin/python /home/bartox7777/alkomat_flask/facial_recognition/facial_req.py -u={uuid}",
         ),
     ).start()
 
