@@ -3,8 +3,6 @@ import time
 import requests
 import serial
 
-from helpers import ip
-
 
 class ArduinoSerialClient:
     def __init__(self, port: str, baudrate: int = 9600, timeout: float = 1.0):
@@ -52,14 +50,50 @@ class ArduinoSerialClient:
 
 
 if __name__ == "__main__":
+    ip = "150.254.45.26:5000"
     client = ArduinoSerialClient(port="COM9")
     try:
         breathalyzer_id = input("Enter Brethalyzer ID: ")
         client.send_brethalyzer_id(breathalyzer_id)
-        uuid = client.read_uuid()
-        print(f"UUID: {uuid}")
-        # send response to server
-        response = requests.get(f"http://{ip}/api/uuid/{uuid}")
-        print(f"Server response: {response} {response.content}")
+        while True:
+            print("Waiting for breathalyzer response...")
+            uuid = client.read_uuid()
+            print(f"Received UUID: {uuid}")
+            user_id = None
+            max_adc = None
+            while user_id is None:
+                response = requests.get(f"http://{ip}/api/uuid/{uuid}")
+                print(f"Server response: {response}\n")
+                user_id = response.json().get("user_id")
+                time.sleep(1)
+            print(f"User ID: {user_id}")
+            client.send_response("#" + user_id)
+            print("Waiting for max ADC...")
+            while max_adc is None or max_adc == 0:
+                max_adc = client.read_max_adc()
+                print(f"Max ADC: {max_adc}")
+                time.sleep(1)
+            response = requests.get(
+                f"http://{ip}/api/add_reading_uuid/{uuid}/{max_adc}/{breathalyzer_id}",
+            )
+            print(f"Server response after reading: {response}\n")
+            response_msg = response.json()["message"]
+            print("Response: {}".format(response_msg))
+            response_char = ""
+            if response_msg == "USER DOESN'T EXIST":
+                response_char = "USER DOESN'T EXIST"
+            elif response_msg == "USER BLOCKED":
+                response_char = "USER BLOCKED"
+            elif response_msg == "ENTRY BLOCKED":
+                response_char = "ENTRY BLOCKED"
+            elif response_msg == "ACCEPTED":
+                response_char = "ACCEPTED"
+            elif response_msg == "CONNECTION ERROR":
+                response_char = "CONNECTION ERROR"
+            else:
+                response_char = "UNKNOWN"
+            client.send_response(response_char)
+            print(f"Response sent: {response_char}")
+
     finally:
         client.close()
