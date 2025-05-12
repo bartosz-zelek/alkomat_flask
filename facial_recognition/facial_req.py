@@ -165,20 +165,19 @@ if __name__ == "__main__":
     )
     fr = FaceRecognition(parser.parse_args())
 
-    while True:
-        name = "Unknown"
-        name, picture = fr.recognize_face_and_return_name()
-        uuid = fr.args.uuid
-        # encode frame to JPEG and base64 so Flask can parse JSON
-        _, img_buf = cv2.imencode(".jpg", picture)
-        img_b64 = base64.b64encode(img_buf).decode("ascii")
-        payload = {"photo": img_b64, "user_id": name}
-        headers = {"Content-Type": "application/json"}
-        response = requests.post(
-            f"http://{ip}/api/uuid/{uuid}", data=json.dumps(payload), headers=headers
-        )
-        if response.status_code == 200:
-            print("UUID sent successfully")
-        else:
-            print(f"Failed to send UUID: {response.status_code} {response.text}")
-        print("Recognized name: {}".format(name))
+    name = "Unknown"
+    name, picture = fr.recognize_face_and_return_name()
+    uuid = fr.args.uuid
+    # encode frame to JPEG and base64 so Flask can parse JSON
+    _, img_buf = cv2.imencode(".jpg", picture)
+    img_b64 = base64.b64encode(img_buf).decode("ascii")
+    payload = {"photo": img_b64, "user_id": name}
+    headers = {"Content-Type": "application/json"}
+    response = requests.post(
+        f"http://{ip}/api/uuid/{uuid}", data=json.dumps(payload), headers=headers
+    )
+    if response.status_code == 200:
+        print("UUID sent successfully")
+    else:
+        print(f"Failed to send UUID: {response.status_code} {response.text}")
+    print("Recognized name: {}".format(name))

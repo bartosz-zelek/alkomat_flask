@@ -185,6 +185,54 @@ def add_reading(user_id, value):
         return traceback.format_exception(exc_type, exc_value, exc_tb)[-1], 500
 
 
+@api.route("/add_reading_uuid/<uuid>/<int:value>/<breathalyzer_id>", methods=["GET"])
+def add_reading_uuid(uuid, value, breathalyzer_id):
+    try:
+        # Try to insert the reading into the database
+        db = get_db()
+
+        # Check if an employee with the given user_id exists
+        cur = db.execute("SELECT * FROM uuids WHERE uuid = ?", (uuid,))
+        user = cur.fetchone()
+        if not user:
+            # User does not exist, return error message
+            return jsonify({"message": "USER DOESN'T EXIST"}), 404
+
+        # Check if an employee is blocked
+        cur = db.execute("SELECT BLOCKED FROM USERS WHERE user_id = ?", (user[1],))
+        blocked_status = cur.fetchone()
+        print(f"Bloked status: {blocked_status[0]}")
+        if blocked_status[0] == 1:
+            # User is blocked, return error message
+            return jsonify({"message": "USER BLOCKED"}), 403
+
+        # Insert the reading into the database
+        insert_value = max(0, 0.00417 * value - 3.000)
+        print(f"Insert value: {insert_value}")
+        db.execute(
+            "INSERT INTO readings (user_id, date_time, value) VALUES (?, ?, ?)",
+            (user[1], datetime.now(), round(insert_value, 2)),
+        )
+        db.commit()
+
+        # Check if user should be blocked
+        try:
+            is_drunk = insert_value > 0.2
+            if is_drunk:
+                check_for_block(user[1])
+                return jsonify({"message": "ENTRY BLOCKED"}), 200
+        except Exception as e:
+            return jsonify({"message": str(e)}), 500
+
+        print(f"Accepted reading for user {user[1]}: {value}")
+
+        return jsonify({"message": "ACCEPTED"}), 200
+    except sqlite3.Error:
+        # If an SQLite error occurs, return the error information as a response
+        exc_type, exc_value, exc_tb = sys.exc_info()
+        return traceback.format_exception(exc_type, exc_value, exc_tb)[-1], 500
+
+
 # Define route to get plots from helpers.py
 @api.route("/get_plots")
 def get_plots():
