@@ -171,7 +171,9 @@ def delete_employee(id):
         db.execute("DELETE FROM users WHERE user_id = ?", (id,))
         db.commit()
 
-        os.system(f"rm -rf /home/bartox7777/alkomat_flask/dataset/{id}")
+        res = os.system(f"rm -rf /home/bartox7777/alkomat_flask/dataset/{id}")
+        if res != 0:
+            print(f"Error deleting directory for user_id {id}")
         run_training()
 
         flash(f"Employee with user_id {id} deleted successfully!", "danger")

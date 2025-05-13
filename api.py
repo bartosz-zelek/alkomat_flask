@@ -201,6 +201,7 @@ def add_reading_uuid(uuid, value, breathalyzer_id):
         # Check if an employee is blocked
         cur = db.execute("SELECT BLOCKED FROM USERS WHERE user_id = ?", (user[1],))
         blocked_status = cur.fetchone()
+
         print(f"Bloked status: {blocked_status[0]}")
         if blocked_status[0] == 1:
             # User is blocked, return error message
@@ -210,8 +211,8 @@ def add_reading_uuid(uuid, value, breathalyzer_id):
         insert_value = max(0, 0.00417 * value - 3.000)
         print(f"Insert value: {insert_value}")
         db.execute(
-            "INSERT INTO readings (user_id, date_time, value) VALUES (?, ?, ?)",
-            (user[1], datetime.now(), round(insert_value, 2)),
+            "INSERT INTO readings (user_id, date_time, value, uuid, breathalyzer) VALUES (?, ?, ?, ?, ?)",
+            (user[1], datetime.now(), round(insert_value, 2), uuid, breathalyzer_id),
         )
         db.commit()
 
@@ -266,3 +267,22 @@ def get_plots():
         # If an SQLite error occurs, return the error information as a response
         exc_type, exc_value, exc_tb = sys.exc_info()
         return traceback.format_exception(exc_type, exc_value, exc_tb)[-1], 500
+
+
+# Endpoint to get image in base64 by UUID
+@api.route("/get_image")
+def get_image_by_uuid():
+    # Expect uuid as query parameter
+    uuid = request.args.get("uuid", type=str)
+    if not uuid:
+        return jsonify({"base64": None}), 400
+    try:
+        db = get_db()
+        cur = db.execute("SELECT photo FROM uuids WHERE uuid = ?", (uuid,))
+        row = cur.fetchone()
+        if row and row[0]:
+            return jsonify({"base64": row[0]}), 200
+        else:
+            return jsonify({"base64": None}), 200
+    except sqlite3.Error:
+        return jsonify({"base64": None}), 500

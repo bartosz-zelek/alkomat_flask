@@ -74,3 +74,4 @@ print(knownNames)
 print("[INFO] serializing encodings...")
 with open(encodingsPath, "wb") as f:
     f.write(pickle.dumps({"encodings": knownEncodings, "names": knownNames}))
+print("[INFO] encodings serialized to disk")

@@ -10,6 +10,8 @@ CREATE TABLE IF NOT EXISTS READINGS (
     user_id VARCHAR(8),
     DATE_TIME DATETIME,
     VALUE REAL,
+    uuid TEXT,
+    breathalyzer TEXT,
     FOREIGN KEY(user_id) REFERENCES USERS(user_id)
 );
 

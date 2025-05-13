@@ -13,6 +13,7 @@ function set_record_updater(user_id) {
                     <td>${reading[1]} ${reading[2]}</td>
                     <td>${reading[3]}‰</td>
                     <td>${reading[3] < 0.2 ? "Admitted" : "Not admitted"}</td>
+                    <td>${reading[5]}</td>
                     `;
                     if (reading[3] < 0.2) {
                         row.classList.add('table-success');

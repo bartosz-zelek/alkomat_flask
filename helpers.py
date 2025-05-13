@@ -25,12 +25,12 @@ def get_readings_internal(count, offset, id=None):
     # Formulate the SQL query based on the presence of 'id'
     if id:
         cur = db.execute(
-            "SELECT date_time, name, surname, value FROM users INNER JOIN readings ON users.user_id = readings.user_id WHERE users.user_id = ? ORDER BY readings.date_time DESC LIMIT ? OFFSET ?",
+            "SELECT date_time, name, surname, value, uuid, breathalyzer FROM users INNER JOIN readings ON users.user_id = readings.user_id WHERE users.user_id = ? ORDER BY readings.date_time DESC LIMIT ? OFFSET ?",
             (id, count, offset),
         )
     else:
         cur = db.execute(
-            "SELECT date_time, name, surname, value FROM users INNER JOIN readings ON users.user_id = readings.user_id ORDER BY readings.date_time DESC LIMIT ? OFFSET ?",
+            "SELECT date_time, name, surname, value, uuid, breathalyzer FROM users INNER JOIN readings ON users.user_id = readings.user_id ORDER BY readings.date_time DESC LIMIT ? OFFSET ?",
             (count, offset),
         )
 
@@ -92,7 +92,7 @@ def add_employee_to_database(user_id, name, surname):
 
         kill_facial_recognition_process()
         take_face_photos(name)
-        run_facial_recognition_process()
+        # run_facial_recognition_process()
         run_training()
 
         # Return dict with employee data
