@@ -7,6 +7,7 @@
 #define RatioMQ3CleanAir (60)
 #define BUZZER_PIN 12 // Pin for the speaker/buzzer
 #define SERVO_PIN A2  // Pin for the servo motor
+#define BUTTON_PIN 6  // Pin for the face recognition button
 
 MQUnifiedsensor MQ3("Arduino", 5.0F, 10, A0, "MQ-3");
 LiquidCrystal_I2C lcd(0x27, 16, 2);
@@ -38,6 +39,7 @@ void setup()
   {
     pinMode(SERVO_PIN, OUTPUT);
     pinMode(BUZZER_PIN, OUTPUT);
+    pinMode(BUTTON_PIN, INPUT_PULLUP); // Configure button pin with internal pull-up
     digitalWrite(BUZZER_PIN, LOW); // Turn off the buzzer initially
   }
 
@@ -100,119 +102,148 @@ void setup()
         ;
     }
   }
+
+  // Seed PRNG from an analog pin (floating when no sensor attached)
+  randomSeed(analogRead(A7));
 }
 
 void loop()
 {
+  // Wait for user to press the recognition button instead of fixed delay
   lcd.setCursor(0, 0);
-  lcd.print("Recognizing face");
+  lcd.print("Press button...");
+  while (digitalRead(BUTTON_PIN) == HIGH) {
+    delay(10);
+  }
+  lcd.clear();
 
-  delay(10000); // Simulate face recognition delay
+  lcd.setCursor(0, 0);
 
+  uuid.seed(analogRead(A7), analogRead(A6)); // Seed the UUID with random values
   uuid.generate();
   String uuidStr = uuid.toCharArray();
   Serial.println(uuidStr); 
 
-  // read from serial
-  if (Serial.available())
+  lcd.print("Recognizing...");
+
+
+  // read from serial – wait for user id prefixed with '#'
+  String user_id;
+  do {
+      // wait until data arrives
+      while (!Serial.available()) {
+          ; // no-op
+      }
+      user_id = Serial.readStringUntil('\n');
+      user_id.trim();
+      // reject if empty or missing leading '#'
+  } while (user_id.length() == 0 || user_id.charAt(0) != '#');
+  // strip the leading '#'
+  user_id = user_id.substring(1);
+
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("User ID: ");
+  lcd.print(user_id);
+  lcd.setCursor(0, 1);
+  lcd.print("Blow to test");
+
+  // Baseline measurement
+  int baseline = 0;
+  for (int i = 0; i < 10; i++)
   {
-    String user_id = Serial.readString();
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print("User ID: ");
-    lcd.print(user_id);
-    lcd.setCursor(0, 1);
-    lcd.print("Blow to test");
-
-    // Baseline measurement
-    int baseline = 0;
-    for (int i = 0; i < 10; i++)
-    {
-      baseline += analogRead(A7);
-      delay(50);
-    }
-    baseline /= 10;
-    float maxAdc = baseline;
-
-    // Wait for blow
-    bool blowDetected = false;
-    while (!blowDetected)
-    {
-      // clear second row
-      MQ3.update();
-      adc = analogRead(A7);
-
-      lcd.setCursor(0, 1);
-
-      // Detect blow: threshold can be tuned
-      if (adc > baseline + 25 || adc < baseline - 25)
-      {
-        blowDetected = true;
-        lcd.clear();
-        lcd.setCursor(0, 0);
-        lcd.print("Keep blowing...");
-        delay(250);
-
-        // Measure for 5 seconds and take max result
-        unsigned long measureStart = millis();
-        while (millis() - measureStart < 5000)
-        {
-          MQ3.update();
-          adc = analogRead(A7);
-          if (adc > maxAdc)
-          {
-            maxAdc = adc;
-          }
-          lcd.setCursor(0, 1);
-          lcd.print("ADC: ");
-          lcd.print(adc);
-          lcd.print("    "); // Clear any leftover chars
-          delay(50);
-        }
-        lcd.clear();
-        lcd.setCursor(0, 0);
-        lcd.print("Max ADC: ");
-        lcd.print(maxAdc, 0);
-        delay(3000);
-      }
-      delay(100);
-    }
-    lcd.clear();
-    Serial.println((int)maxAdc);
-    String resp = Serial.readString();
-    lcd.setCursor(0, 0);
-    lcd.print("Response: ");
-    lcd.setCursor(0, 1);
-    lcd.print(resp);
-    if (resp == "ACCEPTED")
-    {
-      servo.attach(SERVO_PIN); // Re-attach before moving
-      servoPos = 90;           // Move servo by 90 degrees
-      servo.write(servoPos);   // Move the servo to the new position
-      digitalWrite(LED_BUILTIN, HIGH);
-      delay(5000);                    // Wait for 5 seconds
-      digitalWrite(LED_BUILTIN, LOW); // Turn off the built-in LED
-      servoPos = 0;                   // Move servo back to original (0°) position
-      servo.write(servoPos);          // Move the servo to the new position
-      delay(500);                     // Wait for servo to reach original position before detaching
-      servo.detach();                 // Detach after movement to prevent ticking
-    }
-    else
-    {
-      // make sound
-      // blink with builtin led
-      for (int i = 0; i < 5; i++)
-      {
-        digitalWrite(LED_BUILTIN, HIGH); // Turn on the built-in LED
-        digitalWrite(BUZZER_PIN, HIGH);  // Turn on the buzzer
-        delay(500);                      // Wait for 0.5 seconds
-        digitalWrite(LED_BUILTIN, LOW);  // Turn off the built-in LED
-        digitalWrite(BUZZER_PIN, LOW);   // Turn off the buzzer
-        delay(500);                      // Wait for 0.5 seconds
-      }
-      digitalWrite(BUZZER_PIN, LOW); // Turn off the buzzer
-    }
-    delay(2000);
-    lcd.clear();
+    baseline += analogRead(A7);
+    delay(50);
   }
+  baseline /= 10;
+  float maxAdc = baseline;
+
+  // Wait for blow
+  bool blowDetected = false;
+  while (!blowDetected)
+  {
+    // clear second row
+    MQ3.update();
+    adc = analogRead(A7);
+
+    lcd.setCursor(0, 1);
+
+    // Detect blow: threshold can be tuned
+    if (adc > baseline + 25 || adc < baseline - 25)
+    {
+      blowDetected = true;
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("Keep blowing...");
+      delay(250);
+
+      // Measure for 5 seconds and take max result
+      unsigned long measureStart = millis();
+      while (millis() - measureStart < 5000)
+      {
+        MQ3.update();
+        adc = analogRead(A7);
+        if (adc > maxAdc)
+        {
+          maxAdc = adc;
+        }
+        lcd.setCursor(0, 1);
+        lcd.print("ADC: ");
+        lcd.print(adc);
+        lcd.print("    "); // Clear any leftover chars
+        delay(50);
+      }
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("Max ADC: ");
+      lcd.print(maxAdc, 0);
+      delay(3000);
+    }
+    delay(100);
+  }
+  lcd.clear();
+  Serial.println((int)maxAdc);
+  // wait for non-empty response
+  String resp;
+  do {
+    while (!Serial.available()) {
+      ; // wait for incoming data
+    }
+    resp = Serial.readStringUntil('\n');
+    resp.trim();
+  } while (resp.length() == 0);
+  lcd.setCursor(0, 0);
+  lcd.print("Response: ");
+  lcd.setCursor(0, 1);
+  lcd.print(resp);
+  if (resp == "ACCEPTED")
+  {
+    servo.attach(SERVO_PIN); // Re-attach before moving
+    servoPos = 90;           // Move servo by 90 degrees
+    servo.write(servoPos);   // Move the servo to the new position
+    digitalWrite(LED_BUILTIN, HIGH);
+    delay(5000);                    // Wait for 5 seconds
+    digitalWrite(LED_BUILTIN, LOW); // Turn off the built-in LED
+    servoPos = 0;                   // Move servo back to original (0°) position
+    servo.write(servoPos);          // Move the servo to the new position
+    delay(500);                     // Wait for servo to reach original position before detaching
+    servo.detach();                 // Detach after movement to prevent ticking
+  }
+  else
+  {
+    // make sound
+    // blink with builtin led
+    for (int i = 0; i < 5; i++)
+    {
+      digitalWrite(LED_BUILTIN, HIGH); // Turn on the built-in LED
+      digitalWrite(BUZZER_PIN, HIGH);  // Turn on the buzzer
+      delay(500);                      // Wait for 0.5 seconds
+      digitalWrite(LED_BUILTIN, LOW);  // Turn off the built-in LED
+      digitalWrite(BUZZER_PIN, LOW);   // Turn off the buzzer
+      delay(500);                      // Wait for 0.5 seconds
+    }
+    digitalWrite(BUZZER_PIN, LOW); // Turn off the buzzer
+  }
+  delay(2000);
+  lcd.clear();
 }

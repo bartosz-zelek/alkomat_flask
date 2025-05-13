@@ -24,8 +24,8 @@ setInterval(() => {
                 let row = document.createElement('tr');
                 row.innerHTML = `
                 <th scope="row">${index + 1}</th>
-                <td>${firstName}</td>
-                <td>${lastName}</td>
+                <td>${time}</td>
+                <td>${firstName} ${lastName}</td>
                 <td>${value}‰</td>
                 <td>${value < 0.2 ? "Dopuszczony" : "Niedopuszczony"}</td>
                 <td>${date}</td>
