@@ -107,7 +107,7 @@ void loop()
   lcd.setCursor(0, 0);
   lcd.print("Recognizing face");
 
-  delay(20000); // Simulate face recognition delay
+  delay(10000); // Simulate face recognition delay
 
   uuid.generate();
   String uuidStr = uuid.toCharArray();
